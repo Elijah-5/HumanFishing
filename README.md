@@ -2,21 +2,22 @@
 
 A Blueprint project for Unreal Engine 5.2.1.
 
-## Gameplay demo
+## Motion System Demo
 
-This prototype clip follows the player-controlled fish as it swims underwater, crosses onto the beach, and dives back in.
+The clip demonstrates camera-directed swimming, movement on the beach, and transitions between water and land. The fish's tail beat speeds up as it swims faster and slows down at rest and on land.
 
-![Gameplay demo of Human Fishing](docs/media/human-fishing-demo.gif)
+![Human Fishing motion system demo](docs/media/human-fishing-demo.gif)
 
 ## Run the project
 
-Open `HumanFishing.uproject` and click **Play** in `L_ShorePrototype`. Use WASD to move, the mouse to look, and Space to jump. The player uses the low-poly fish model while the team builds swimming and fishing.
+Open `HumanFishing.uproject` and click **Play** in `L_ShorePrototype`. Use WASD to move and the mouse to look. While swimming, look up or down and press W to change depth. Press Space to jump on land.
 
 | Asset | Purpose |
 | --- | --- |
-| `Content/HumanFishing/Maps/L_ShorePrototype` | Test map with a player start, shore, water area, and base marked with graybox geometry |
+| `Content/HumanFishing/Maps/L_ShorePrototype` | Test map with a beach, a bounded swim area, and a graybox base |
 | `Content/HumanFishing/Core/BP_HumanFishingGameMode` | Default game mode and pawn selection |
-| `Content/HumanFishing/Player/BP_FishPlayer` | Player pawn with the Third Person template input and camera |
+| `Content/HumanFishing/Player/BP_FishPlayer` | Player pawn with swimming, land movement, camera following, and swim animation speed control |
+| `Content/Assets/Fish/A_FishSwim` | Looping fish tail animation |
 | `Content/ThirdPerson/Input` | Enhanced Input assets used by the player |
 
 The first gameplay milestone is moving the fish through the water area and delivering a placeholder catch to the base. Add fishing, NPC, and UI assets under `Content/HumanFishing` as those systems are implemented. Keep working copies of experimental maps separate from the shared prototype map.
