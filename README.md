@@ -2,6 +2,14 @@
 
 A Blueprint project for Unreal Engine 5.2.1.
 
+## Gameplay demo
+
+This prototype clip follows the player-controlled fish as it swims underwater, crosses onto the beach, and dives back in.
+
+![Gameplay demo of Human Fishing](docs/media/human-fishing-demo.gif)
+
+## Run the project
+
 Open `HumanFishing.uproject` and click **Play** in `L_ShorePrototype`. Use WASD to move, the mouse to look, and Space to jump. The player uses the low-poly fish model while the team builds swimming and fishing.
 
 | Asset | Purpose |
