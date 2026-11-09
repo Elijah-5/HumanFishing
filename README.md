@@ -23,14 +23,20 @@ The deep-ocean blockout has a larger swim area, an 18-meter-deep seabed, rocks, 
 surface, and blue haze. Movement uses the existing fish Blueprint and the same controls.
 The spawn points sit outside the travel zones to prevent immediate back-and-forth loads.
 
-Travel currently reloads each map: temporary scene state, including stunned humans,
-resets when returning. Persistent catches, currency, and character state are future work.
+## Player counters and HUD
+
+The upper-left HUD shows Captures and Seaweed from `BP_HumanFishingGameInstance`.
+
+To access them in a Blueprint: Get Game Instance -> Cast to BP_HumanFishingGameInstance
+-> Get/Set Captures or Seaweed.
 
 | Asset | Purpose |
 | --- | --- |
 | `Content/HumanFishing/Maps/L_ShorePrototype` | Test map with a beach, a bounded swim area, and a graybox base |
 | `Content/HumanFishing/Maps/L_DeepOcean` | Offshore swimming blockout with a return route |
 | `Content/HumanFishing/Travel/BP_LevelTravelZone` | Fish-triggered level travel with an editable DestinationMap |
+| `Content/HumanFishing/Core/BP_HumanFishingGameInstance` | Session counters for Captures and Seaweed |
+| `Content/HumanFishing/UI/WBP_PlayerHUD` | Bound capture/currency display |
 | `Content/HumanFishing/Core/BP_HumanFishingGameMode` | Default game mode and pawn selection |
 | `Content/HumanFishing/Player/BP_FishPlayer` | Player pawn with swimming, land movement, camera following, and swim animation speed control |
 | `Content/Assets/Fish/A_FishSwim` | Looping fish tail animation |
