@@ -1,0 +1,2 @@
+*.uasset -text -diff -merge -filter
+*.umap -text -diff -merge -filter
