@@ -12,9 +12,25 @@ The clip demonstrates camera-directed swimming, movement on the beach, and trans
 
 Open `HumanFishing.uproject` and click **Play** in `L_ShorePrototype`. Use WASD to move and the mouse to look. While swimming, look up or down and press W to change depth. Press Space to jump on land.
 
+## Deep ocean travel
+
+From the shoreline, turn away from the beach and continue swimming offshore. Crossing
+the offshore boundary loads `L_DeepOcean` automatically. In the ocean, turn
+back toward the edge you arrived from and swim to that boundary to return to shore.
+There is no interaction button. Only actors of the fish player Blueprint activate travel.
+
+The deep-ocean blockout has a larger swim area, an 18-meter-deep seabed, rocks, water
+surface, and blue haze. Movement uses the existing fish Blueprint and the same controls.
+The spawn points sit outside the travel zones to prevent immediate back-and-forth loads.
+
+Travel currently reloads each map: temporary scene state, including stunned humans,
+resets when returning. Persistent catches, currency, and character state are future work.
+
 | Asset | Purpose |
 | --- | --- |
 | `Content/HumanFishing/Maps/L_ShorePrototype` | Test map with a beach, a bounded swim area, and a graybox base |
+| `Content/HumanFishing/Maps/L_DeepOcean` | Offshore swimming blockout with a return route |
+| `Content/HumanFishing/Travel/BP_LevelTravelZone` | Fish-triggered level travel with an editable DestinationMap |
 | `Content/HumanFishing/Core/BP_HumanFishingGameMode` | Default game mode and pawn selection |
 | `Content/HumanFishing/Player/BP_FishPlayer` | Player pawn with swimming, land movement, camera following, and swim animation speed control |
 | `Content/Assets/Fish/A_FishSwim` | Looping fish tail animation |
