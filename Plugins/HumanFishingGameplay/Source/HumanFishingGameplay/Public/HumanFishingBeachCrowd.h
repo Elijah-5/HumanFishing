@@ -9,6 +9,7 @@ class AAIController;
 class AHUD;
 class FAutoConsoleCommandWithWorldArgsAndOutputDevice;
 class UAnimMontage;
+class UStaticMeshComponent;
 
 UCLASS()
 class HUMANFISHINGGAMEPLAY_API AHumanFishingBeachCrowd : public AActor
@@ -41,6 +42,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Beach")
     void ToggleBait();
+
+    UFUNCTION(BlueprintCallable, Category="Beach")
+    void SetCastBaitMesh(UStaticMeshComponent* Visual) const;
 
     UFUNCTION(BlueprintPure, Category="Beach")
     bool IsOnBeach(FVector Position) const;

@@ -198,6 +198,18 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TMap<FName, FHumanFishingCatchType> Types;
 
+    UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UStaticMesh> DollarBaitMesh;
+
+    UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UStaticMesh> FlashBaitMesh;
+
+    UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UTexture2D> DollarBaitPortrait;
+
+    UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UTexture2D> FlashBaitPortrait;
+
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TObjectPtr<UTexture2D> BackpackFrame;
 

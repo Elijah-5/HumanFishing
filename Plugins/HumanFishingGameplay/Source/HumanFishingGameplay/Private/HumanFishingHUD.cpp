@@ -710,6 +710,18 @@ private:
 void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPlayerUI)
 {
     const TWeakObjectPtr<UHumanFishingPlayerUI> Weak(InPlayerUI);
+    const auto IsFlashBait = [Weak]()
+    {
+        const auto* Data = Weak.IsValid() ? Weak->GetInventory() : nullptr;
+        return Data && Data->GetSelectedBait() == EHumanFishingBait::Flash;
+    };
+    if (const UHumanFishingCatalog* Catalog = InPlayerUI->GetCatalog())
+    {
+        DollarBaitPortrait.SetResourceObject(Catalog->DollarBaitPortrait.Get());
+        FlashBaitPortrait.SetResourceObject(Catalog->FlashBaitPortrait.Get());
+        DollarBaitPortrait.SetImageSize(FVector2D(42.f, 42.f));
+        FlashBaitPortrait.SetImageSize(FVector2D(42.f, 42.f));
+    }
     const TSharedRef<SCaptureToast> Toast = SNew(SCaptureToast, InPlayerUI);
     const TSharedRef<SFishingPausePanel> Panel = SNew(SFishingPausePanel, InPlayerUI);
     PausePanel = Panel;
@@ -731,21 +743,30 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
         [ SNew(SHealthReadout, InPlayerUI).Visibility(EVisibility::HitTestInvisible) ]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24, 184, 0, 0)
         [
-            SNew(SBorder).Padding(FMargin(10, 6)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
+            SNew(SBorder).Padding(FMargin(6, 3, 11, 3)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
             .Visibility_Lambda([Weak]()
             {
                 return Weak.IsValid() && !Weak->IsDeepOcean() && !Weak->IsBackpackOpen()
                     ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
             })
             [
-                SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
-                .Text_Lambda([Weak]()
-                {
-                    const auto* Data = Weak.IsValid() ? Weak->GetInventory() : nullptr;
-                    return Data && Data->GetSelectedBait() == EHumanFishingBait::Flash
-                        ? LOCTEXT("FlashBait", "Flash Bait  ·  B Switch")
-                        : LOCTEXT("DollarBait", "Dollar Bait  ·  B Switch");
-                })
+                SNew(SHorizontalBox)
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0, 0, 5, 0)
+                [
+                    SNew(SImage).Image_Lambda([this, IsFlashBait]() -> const FSlateBrush*
+                    {
+                        return IsFlashBait() ? &FlashBaitPortrait : &DollarBaitPortrait;
+                    })
+                ]
+                + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                [
+                    SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+                    .Text_Lambda([IsFlashBait]()
+                    {
+                        return IsFlashBait() ? LOCTEXT("FlashBait", "Flash Bait  ·  B Switch")
+                            : LOCTEXT("DollarBait", "Dollar Bait  ·  B Switch");
+                    })
+                ]
             ]
         ]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0, 20, 20, 0)

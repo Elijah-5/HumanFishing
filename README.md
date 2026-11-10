@@ -2,11 +2,46 @@
 
 A Blueprint project for Unreal Engine 5.2.1.
 
-## Motion System Demo
+## Gameplay demos
 
-The clip demonstrates camera-directed swimming, movement on the beach, and transitions between water and land. The fish's tail beat speeds up as it swims faster and slows down at rest and on land.
+These clips were recorded in Unreal Editor. Developer mode was used to set up
+the fishing encounters.
 
-![Human Fishing motion system demo](docs/media/human-fishing-demo.gif)
+### Bait selection and capture
+
+Switch from Dollar Bait to Flash Bait, skip the photographer with **Q**, and
+reel in the tourist who approaches the same bait.
+
+![Dollar Bait and Flash Bait, followed by a skipped visitor and a capture](docs/media/bait-and-catch.gif)
+
+### Diver water reel
+
+Reel the diver across the shoreline, through water drag, and into contact with
+the fish.
+
+![The diver enters the water and is reeled toward the fish](docs/media/diver-water-reel.gif)
+
+### Elijah, backpack, and field guide
+
+Release **E** during Elijah's 0.75-second brace cue, then resume reeling.
+The capture appears as a **3×3** portrait in the backpack. Open the field guide
+to read his capture tips.
+
+![Elijah braces, is captured, and appears in the backpack and field guide](docs/media/elijah-and-backpack.gif)
+
+### Scenic Cove and saves
+
+Swim offshore into the deep ocean, pass through the rock arch into Scenic Cove,
+then save and continue from the cove.
+
+![Travel through the deep ocean to Scenic Cove, then save and continue](docs/media/scenic-cove-travel.gif)
+
+### Swimming and shore movement
+
+The fish follows the camera while swimming. Its tail beats faster as it speeds
+up and slows down at rest and on land.
+
+![Camera-directed swimming and transitions between water and land](docs/media/human-fishing-demo.gif)
 
 ## Run the project
 
@@ -27,7 +62,9 @@ ends and the fish respawns in the deep ocean, where it recovers 20 HP per second
 
 Press **B** before casting to switch between Dollar Bait and Flash Bait.
 Both are unlimited and available from the start. The HUD shows your selection,
-which carries across areas for the current session. Every 10–16 seconds a
+which carries across areas for the current session. Dollar Bait is a folded
+bundle of banknotes and Flash Bait is a glowing crystal in a brass frame. Their
+HUD illustrations show the same models used in the cast. Every 10–16 seconds a
 visitor can enter from either end of the beach, up to six at a time. Arriving
 and wandering visitors can notice bait within their detection radius if they
 have a path to it. Interest builds fastest within one meter.
@@ -52,8 +89,10 @@ first available space in the backpack and adds one to `Captures`. The tourist
 returns to patrol if the backpack has no room for the catch.
 
 When a worker braces, release **E** to avoid extra line wear during the next
-tug. To catch a diver, cast from the water and reel them past the shore until
-they touch the fish.
+tug. To catch a diver, cast from the shallows and reel them past the shore
+until they touch the fish. Once they start swimming, water drag slows the pull
+and raises line wear from 22 to 30 per second. A shorter stretch of water makes
+the catch easier.
 
 ### Elijah
 
@@ -63,12 +102,12 @@ rebuilt head, solid-color skin, and a faceted center-parted haircut. He wears an
 academic gown, carries a mortarboard and teddy bear, and has dedicated idle,
 bait-inspection, and brace animations.
 
-Elijah braces at 25%, 50%, and 75% of the reel bar. Each mark pauses movement,
-progress, and normal line wear. Release **E** during the one-second countdown
+Elijah braces at 20%, 40%, 60%, and 80% of the reel bar. Each mark pauses movement,
+progress, and normal line wear. Release **E** during the 0.75-second countdown
 beside the durability ring and keep it released through the tug. The result
-appears for 0.45 seconds. Holding through the tug costs 32 durability. Hold **E**
-again after the result to continue reeling. A catch requires all three marks
-and at least 2.4 seconds of active reeling, even on a short line.
+appears for 0.45 seconds. Holding through the tug costs 40 durability. Hold **E**
+again after the result to continue reeling. A catch requires all four marks
+and at least 3.2 seconds of active reeling, even on a short line.
 
 ### Backpack and field guide
 
@@ -102,7 +141,7 @@ measured per second.
 | Businessman | Purple | 1×3 | 15 | 1.70× | 20 | 17 |
 | Surf instructor | Purple | 3×1 | 15 | 0.85× | 18 | 18 |
 | Photographer | Gold | 3×2 | 48 | 0.72× | 22 | 20 |
-| Diver | Gold | 2×3 | 48 | 0.65× | 25 | 22 |
+| Diver | Gold | 2×3 | 48 | 0.65× | 25 | 22 on shore, 30 while swimming |
 | Elijah | Red | 3×3 | 117 | 0.53× | 19 | 9 |
 
 The `HumanFishingGameplay` project plugin provides the backpack and health UI.
@@ -177,4 +216,4 @@ Fish model: [Low poly fish](https://www.fab.com/listings/e6d7b903-fdea-4ce6-9d60
 
 Shore tourist: [Beach Character](https://poly.pizza/m/DojKLcO34E) by Quaternius, [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
 
-Bait: [Dollar](https://poly.pizza/m/YmaCrICQe2) by J-Toastie, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The project imports the original mesh and embedded texture, uses a two-sided material, and scales the bait in the level.
+Original dollar asset: [Dollar](https://poly.pizza/m/YmaCrICQe2) by J-Toastie, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). The current bait models and HUD illustrations were made for this project.

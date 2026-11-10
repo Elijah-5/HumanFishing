@@ -33,14 +33,16 @@ constexpr double PulsePeriod = 2.2;
 constexpr double PulseWarning = 1.3;
 constexpr double BurstStart = 1.7;
 constexpr double BurstWear = 18.;
-constexpr double BraceMarks[] = {.25, .50, .75};
-constexpr double BraceWarning = 1.;
+constexpr double BraceMarks[] = {.20, .40, .60, .80};
+constexpr double BraceWarning = .75;
+constexpr double BraceAnimationStrike = 1.;
 constexpr double BraceFeedback = .45;
-constexpr double BraceWear = 32.;
-constexpr double MinPullSeconds = 2.4;
+constexpr int32 BraceWear = 40;
+constexpr double MinPullSeconds = 3.2;
 constexpr double DryCatchRadius = 55.;
-constexpr double DiverLandSpeed = 330.;
-constexpr double DiverWaterSpeed = 460.;
+constexpr double DiverLandSpeed = 305.;
+constexpr double DiverWaterSpeed = 345.;
+constexpr double DiverWaterWear = 8.;
 constexpr double DiverReturnSpeed = 300.;
 
 double BurstSeconds(double Elapsed)
@@ -597,6 +599,21 @@ void AHumanFishingBeachCrowd::ToggleBait()
     }
 }
 
+void AHumanFishingBeachCrowd::SetCastBaitMesh(UStaticMeshComponent* Visual) const
+{
+    const auto* Inventory = GetGameInstance()->GetSubsystem<UHumanFishingInventory>();
+    if (!Visual || !Catalog || !Inventory)
+    {
+        return;
+    }
+    UStaticMesh* Mesh = Inventory->GetSelectedBait() == EHumanFishingBait::Flash && Catalog->FlashBaitMesh
+        ? Catalog->FlashBaitMesh.Get() : Catalog->DollarBaitMesh.Get();
+    if (Mesh)
+    {
+        Visual->SetStaticMesh(Mesh);
+    }
+}
+
 bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Goal, double Appeal,
     ACharacter*& Candidate, double& Interest)
 {
@@ -816,10 +833,14 @@ FString AHumanFishingBeachCrowd::GetReelPrompt(const ACharacter* Pedestrian, con
         {
             if (Brace.bStruck)
             {
-                return Brace.bMissed ? TEXT("-32 durability") : TEXT("Brace avoided");
+                return Brace.bMissed ? FString::Printf(TEXT("-%d durability"), BraceWear) : TEXT("Brace avoided");
             }
             return Visitor->bPulling ? TEXT("Elijah is bracing | Release E") : TEXT("Keep E released");
         }
+    }
+    if (Visitor->WaterPhase == EWaterReelPhase::InWater)
+    {
+        return TEXT("Water drag | Keep holding E");
     }
     return IsWaterReel(Pedestrian) ? TEXT("Hold E to pull the diver to you") : DefaultText;
 }
@@ -897,6 +918,10 @@ double AHumanFishingBeachCrowd::SampleLineWear(ACharacter* Pedestrian)
     {
         SampleBrace(*Visitor, *Pedestrian, Elapsed);
     }
+    if (Visitor->WaterPhase == EWaterReelPhase::InWater)
+    {
+        Visitor->ExtraWear += DiverWaterWear * (Elapsed - Visitor->LastWearSample);
+    }
     Visitor->LastWearSample = Elapsed;
     const double WearSeconds = Profile->Struggle == EHumanFishingStruggle::CapFeint
         ? Visitor->Brace.WearSeconds : Elapsed;
@@ -935,7 +960,12 @@ void AHumanFishingBeachCrowd::SampleBrace(FVisitor& Visitor, ACharacter& Pawn, d
     }
     if (auto* Anim = VisitorAnimation(Pawn))
     {
-        Anim->ShowStruggle(Brace.IsBracing() ? Elapsed - Brace.CueStarted : -1.);
+        const double CueTime = Elapsed - Brace.CueStarted;
+        // Reach the authored strike pose when the release window closes, then play the recovery at normal speed.
+        const double PoseTime = CueTime < BraceWarning
+            ? CueTime * BraceAnimationStrike / BraceWarning
+            : BraceAnimationStrike + CueTime - BraceWarning;
+        Anim->ShowStruggle(Brace.IsBracing() ? PoseTime : -1.);
     }
 }
 
@@ -1032,9 +1062,10 @@ void AHumanFishingBeachCrowd::DrawBraceReel(AHUD* HUD, const ACharacter* Pedestr
     const float X = FMath::Clamp(static_cast<float>(Ring.X) + 31.f, 12.f, FMath::Max(12.f, SizeX - 206.f));
     const float Y = FMath::Clamp(static_cast<float>(Ring.Y) - 24.f, 12.f, FMath::Max(12.f, SizeY - 136.f));
     const double CueTime = GetWorld()->GetTimeSeconds() - Visitor->ReelStartedAt - Brace.CueStarted;
-    const FString Label = Brace.bStruck ? (Brace.bMissed ? TEXT("-32 durability") : TEXT("Brace avoided"))
-        : FString::Printf(TEXT("%s  %.1fs"), Visitor->bPulling ? TEXT("RELEASE E") : TEXT("KEEP E UP"),
-            FMath::CeilToDouble(FMath::Max(0., BraceWarning - CueTime) * 10.) / 10.);
+    const FString Label = Brace.bStruck
+        ? (Brace.bMissed ? FString::Printf(TEXT("-%d durability"), BraceWear) : TEXT("Brace avoided"))
+        : FString::Printf(TEXT("%s  %.2fs"), Visitor->bPulling ? TEXT("RELEASE E") : TEXT("KEEP E UP"),
+            FMath::Max(0., BraceWarning - CueTime));
     HUD->DrawRect(Ink, X, Y, 194.f, 38.f);
     HUD->DrawText(Label, CueColor, X + 9.f, Y + 6.f, nullptr, 1.55f);
     const float Fill = Brace.bStruck ? 1.f : FMath::Clamp(1. - CueTime / BraceWarning, 0., 1.);
@@ -1090,6 +1121,7 @@ int32 AHumanFishingBeachCrowd::AdvanceContactReel(ACharacter* Pedestrian, const 
     }
     if (bCrossing && FVector::DistSquared(After, Goal) < 1.)
     {
+        SampleLineWear(Pedestrian);
         Visitor->bReachedWaterAnchor = true;
         Visitor->WaterPhase = EWaterReelPhase::InWater;
         if (auto* Anim = VisitorAnimation(*Pedestrian))

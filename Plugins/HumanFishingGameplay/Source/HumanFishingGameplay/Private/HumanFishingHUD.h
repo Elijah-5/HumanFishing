@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Styling/SlateBrush.h"
 #include "Widgets/SCompoundWidget.h"
 
 class UHumanFishingPlayerUI;
@@ -15,6 +16,8 @@ public:
     void ResetPausePage() { ResetPage.ExecuteIfBound(); }
 
 private:
+    FSlateBrush DollarBaitPortrait;
+    FSlateBrush FlashBaitPortrait;
     TSharedPtr<SWidget> PausePanel;
     FSimpleDelegate ResetPage;
 };
