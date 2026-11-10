@@ -11,8 +11,10 @@ public:
     SLATE_END_ARGS()
 
     void Construct(const FArguments& Arguments, UHumanFishingPlayerUI* InPlayerUI);
-    TSharedPtr<SWidget> GetBackpack() const { return Backpack; }
+    TSharedPtr<SWidget> GetPausePanel() const { return PausePanel; }
+    void ResetPausePage() { ResetPage.ExecuteIfBound(); }
 
 private:
-    TSharedPtr<SWidget> Backpack;
+    TSharedPtr<SWidget> PausePanel;
+    FSimpleDelegate ResetPage;
 };

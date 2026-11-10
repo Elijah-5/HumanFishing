@@ -6,8 +6,10 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "HumanFishingHUD.h"
 #include "HumanFishingInventory.h"
+#include "HumanFishingSave.h"
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -19,7 +21,12 @@ UHumanFishingPlayerUI::UHumanFishingPlayerUI()
 void UHumanFishingPlayerUI::BeginPlay()
 {
     Super::BeginPlay();
-    bDeepOcean = UGameplayStatics::GetCurrentLevelName(this) == TEXT("L_DeepOcean");
+    const FName Level(*UGameplayStatics::GetCurrentLevelName(this));
+    bDeepOcean = Level == UHumanFishingSaveSubsystem::OceanLevel;
+    if (auto* Save = GetSaveSubsystem())
+    {
+        Save->LevelReady(Level);
+    }
 }
 
 APlayerController* UHumanFishingPlayerUI::GetLocalController() const
@@ -33,6 +40,12 @@ UHumanFishingInventory* UHumanFishingPlayerUI::GetInventory() const
 {
     UGameInstance* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
     return Instance ? Instance->GetSubsystem<UHumanFishingInventory>() : nullptr;
+}
+
+UHumanFishingSaveSubsystem* UHumanFishingPlayerUI::GetSaveSubsystem() const
+{
+    UGameInstance* Instance = GetWorld() ? GetWorld()->GetGameInstance() : nullptr;
+    return Instance ? Instance->GetSubsystem<UHumanFishingSaveSubsystem>() : nullptr;
 }
 
 void UHumanFishingPlayerUI::EnsureOverlay(APlayerController* Controller)
@@ -92,7 +105,17 @@ bool UHumanFishingPlayerUI::TryStoreCatch(FName Type)
 {
     UHumanFishingInventory* Inventory = GetInventory();
     const FHumanFishingCatchType* Definition = Catalog ? Catalog->Types.Find(Type) : nullptr;
-    return Inventory && Definition && Inventory->TryAddCatch(Type, Definition->Size);
+    if (!Inventory || !Definition)
+    {
+        return false;
+    }
+    const bool bAlreadyCaught = Inventory->HasCaughtType(Type);
+    if (!Inventory->TryAddCatch(Type, Definition->Size))
+    {
+        return false;
+    }
+    NewGuideType = bAlreadyCaught ? NAME_None : Type;
+    return true;
 }
 
 void UHumanFishingPlayerUI::ShowCaptureToast(FName Type)
@@ -104,6 +127,12 @@ void UHumanFishingPlayerUI::ShowCaptureToast(FName Type)
 FName UHumanFishingPlayerUI::GetToastType() const
 {
     return GetWorld() && GetWorld()->GetTimeSeconds() < ToastUntil ? ToastType : NAME_None;
+}
+
+bool UHumanFishingPlayerUI::IsNewGuideToast() const
+{
+    const auto* Save = GetSaveSubsystem();
+    return !NewGuideType.IsNone() && NewGuideType == GetToastType() && (!Save || !Save->IsDeveloperMode());
 }
 
 void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
@@ -119,13 +148,14 @@ void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
     Controller->SetShowMouseCursor(bOpen);
     if (bOpen)
     {
+        Overlay->ResetPausePage();
         AHUD* HUD = Controller->GetHUD();
         if (HUD && HUD->Implements<UHumanFishingBackpackListener>())
         {
             IHumanFishingBackpackListener::Execute_OnBackpackOpening(HUD);
         }
         FInputModeUIOnly InputMode;
-        InputMode.SetWidgetToFocus(Overlay->GetBackpack());
+        InputMode.SetWidgetToFocus(Overlay->GetPausePanel());
         Controller->SetInputMode(InputMode);
     }
     else
@@ -134,8 +164,30 @@ void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
     }
 }
 
+namespace
+{
+UHumanFishingInventory* ProgressInventory(const UObject* WorldContextObject)
+{
+    UGameInstance* Game = UGameplayStatics::GetGameInstance(WorldContextObject);
+    return Game ? Game->GetSubsystem<UHumanFishingInventory>() : nullptr;
+}
+}
+
+int32 UHumanFishingBlueprintLibrary::GetCaptureCount(const UObject* WorldContextObject)
+{
+    const auto* Inventory = ProgressInventory(WorldContextObject);
+    return Inventory ? Inventory->GetLifetimeCatchCount() : 0;
+}
+
+int32 UHumanFishingBlueprintLibrary::GetSeaweedBalance(const UObject* WorldContextObject)
+{
+    const auto* Inventory = ProgressInventory(WorldContextObject);
+    return Inventory ? Inventory->GetSeaweed() : 0;
+}
+
 void UHumanFishingPlayerUI::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    ResetFishingCamera();
     if (ULocalPlayer* Player = OverlayPlayer.Get())
     {
         if (Player->ViewportClient && Overlay)
@@ -145,6 +197,59 @@ void UHumanFishingPlayerUI::EndPlay(const EEndPlayReason::Type EndPlayReason)
     }
     Overlay.Reset();
     Super::EndPlay(EndPlayReason);
+}
+
+void UHumanFishingPlayerUI::UpdateFishingCamera(bool bFishing)
+{
+    const APawn* Pawn = Cast<APawn>(GetOwner());
+    if (!Pawn)
+    {
+        return;
+    }
+    USpringArmComponent* Boom = FishingCameraBoom.Get();
+    if (!Boom)
+    {
+        if (!bFishing)
+        {
+            return;
+        }
+        Boom = Pawn->FindComponentByClass<USpringArmComponent>();
+        if (!Boom || !Boom->bUsePawnControlRotation || !Boom->bInheritPitch || Boom->IsUsingAbsoluteRotation())
+        {
+            return;
+        }
+        DefaultCameraRotation = Boom->GetRelativeRotation();
+        FishingCameraBoom = Boom;
+        FishingCameraBlend = 0.f;
+        Boom->bInheritPitch = false;
+    }
+
+    constexpr float BlendSeconds = .4f;
+    FishingCameraBlend = FMath::FInterpConstantTo(
+        FishingCameraBlend, bFishing ? 1.f : 0.f, GetWorld()->GetDeltaSeconds(), 1.f / BlendSeconds);
+    if (!bFishing && FishingCameraBlend <= 0.f)
+    {
+        ResetFishingCamera();
+        return;
+    }
+
+    const float ViewPitch = FRotator::NormalizeAxis(Pawn->GetViewRotation().Pitch);
+    const float FishingPitch = FMath::Min(ViewPitch,
+        FMath::GetMappedRangeValueClamped(FVector2f(-55.f, 25.f), FVector2f(-55.f, -20.f), ViewPitch));
+    FRotator Rotation = DefaultCameraRotation;
+    Rotation.Pitch = FMath::Lerp(ViewPitch, FishingPitch, FMath::SmoothStep(0.f, 1.f, FishingCameraBlend));
+    Boom->SetRelativeRotation(Rotation);
+}
+
+void UHumanFishingPlayerUI::ResetFishingCamera()
+{
+    if (USpringArmComponent* Boom = FishingCameraBoom.Get())
+    {
+        Boom->SetRelativeRotation(DefaultCameraRotation);
+        Boom->bInheritPitch = true;
+    }
+    FishingCameraBoom.Reset();
+    FishingCameraBlend = 0.f;
 }
 
 bool UHumanFishingBlueprintLibrary::UpdateBeachHealth(APawn* Fish, bool bInWater, bool bGrounded)
@@ -164,5 +269,21 @@ void UHumanFishingBlueprintLibrary::ShowCaptureToast(APawn* Fish, FName Type)
     if (UHumanFishingPlayerUI* UI = Fish ? Fish->FindComponentByClass<UHumanFishingPlayerUI>() : nullptr)
     {
         UI->ShowCaptureToast(Type);
+    }
+}
+
+void UHumanFishingBlueprintLibrary::UpdateFishingCamera(APawn* Fish, bool bFishing)
+{
+    if (UHumanFishingPlayerUI* UI = Fish ? Fish->FindComponentByClass<UHumanFishingPlayerUI>() : nullptr)
+    {
+        UI->UpdateFishingCamera(bFishing);
+    }
+}
+
+void UHumanFishingBlueprintLibrary::ResetFishingCamera(APawn* Fish)
+{
+    if (UHumanFishingPlayerUI* UI = Fish ? Fish->FindComponentByClass<UHumanFishingPlayerUI>() : nullptr)
+    {
+        UI->ResetFishingCamera();
     }
 }

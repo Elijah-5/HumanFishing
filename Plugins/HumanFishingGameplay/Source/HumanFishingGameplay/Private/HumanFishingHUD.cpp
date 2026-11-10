@@ -2,17 +2,22 @@
 
 #include "Engine/Texture2D.h"
 #include "Framework/Application/SlateApplication.h"
+#include "HumanFishingGuide.h"
 #include "HumanFishingInventory.h"
 #include "HumanFishingPlayerUI.h"
+#include "HumanFishingSave.h"
 #include "Input/DragAndDrop.h"
 #include "InputCoreTypes.h"
 #include "Rendering/DrawElements.h"
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateTypes.h"
+#include "Widgets/Input/SButton.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SScaleBox.h"
+#include "Widgets/Layout/SSpacer.h"
+#include "Widgets/Layout/SWidgetSwitcher.h"
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SLeafWidget.h"
 #include "Widgets/SOverlay.h"
@@ -51,16 +56,23 @@ class SBackpackGrid : public SLeafWidget
 {
 public:
     SLATE_BEGIN_ARGS(SBackpackGrid) {}
+        SLATE_EVENT(FSimpleDelegate, OnSelectionChanged)
     SLATE_END_ARGS()
 
-    void Construct(const FArguments&, UHumanFishingPlayerUI* UI)
+    void Construct(const FArguments& Args, UHumanFishingPlayerUI* UI)
     {
         PlayerUI = UI;
+        OnSelectionChanged = Args._OnSelectionChanged;
         if (const UHumanFishingCatalog* Catalog = UI->GetCatalog())
         {
             for (const auto& Pair : Catalog->Types)
             {
-                Portraits.Add(Pair.Key).SetResourceObject(Pair.Value.Portrait.Get());
+                if (const UTexture2D* Texture = Pair.Value.Portrait.Get())
+                {
+                    FSlateBrush& Brush = Portraits.Add(Pair.Key);
+                    Brush.SetResourceObject(Pair.Value.Portrait.Get());
+                    Brush.SetImageSize(FVector2D(Texture->GetSizeX(), Texture->GetSizeY()));
+                }
             }
         }
     }
@@ -70,6 +82,22 @@ public:
         PreviewId = INDEX_NONE;
         PressedId = INDEX_NONE;
         Invalidate(EInvalidateWidgetReason::Paint);
+    }
+
+    const FHumanFishingCatch* SelectedCatch() const
+    {
+        const UHumanFishingInventory* Data = Inventory();
+        return Data ? Data->FindCatch(SelectedId) : nullptr;
+    }
+
+    void Select(int32 Id)
+    {
+        if (SelectedId != Id)
+        {
+            SelectedId = Id;
+            Invalidate(EInvalidateWidgetReason::Paint);
+            OnSelectionChanged.ExecuteIfBound();
+        }
     }
 
     virtual FVector2D ComputeDesiredSize(float) const override
@@ -107,12 +135,27 @@ public:
             const FVector2D Origin(Cell.X * Item.Cell.X, Cell.Y * Item.Cell.Y);
             const FVector2D Size(Cell.X * Item.Size.X, Cell.Y * Item.Size.Y);
             const float Opacity = Item.Id == PreviewId ? .35f : 1.f;
-            Draw(1, Origin + FVector2D(3), Size - FVector2D(6), WhiteBrush(), FLinearColor(.11f, .26f, .30f, Opacity));
+            const FHumanFishingCatchType* Profile = Lookup(PlayerUI.Get(), Item.Type);
+            FLinearColor Color = UHumanFishingCatalog::GetRarityRules(
+                Profile ? Profile->Rarity : EHumanFishingRarity::White).BackpackColor;
+            Color.A = Opacity;
+            Draw(1, Origin + FVector2D(3), Size - FVector2D(6), WhiteBrush(), Color);
             if (const FSlateBrush* Portrait = Portraits.Find(Item.Type))
             {
-                const float Height = FMath::Min(Size.Y - 8, (Size.X - 8) * 2);
-                const FVector2D ImageSize(Height * .5, Height);
+                const FVector2D Pixels(Portrait->GetImageSize());
+                const FVector2D Interior = Size - FVector2D(8);
+                const double Scale = FMath::Min(Interior.X / Pixels.X, Interior.Y / Pixels.Y);
+                const FVector2D ImageSize = Pixels * Scale;
                 Draw(2, Origin + (Size - ImageSize) * .5, ImageSize, Portrait, FLinearColor(1, 1, 1, Opacity));
+            }
+            if (Item.Id == SelectedId && Item.Id != PreviewId)
+            {
+                const FVector2D TopLeft = Origin + FVector2D(4);
+                const FVector2D BottomRight = Origin + Size - FVector2D(4);
+                const TArray<FVector2D> Outline = {TopLeft, {BottomRight.X, TopLeft.Y},
+                    BottomRight, {TopLeft.X, BottomRight.Y}, TopLeft};
+                FSlateDrawElement::MakeLines(Out, Layer + 3, Geometry.ToPaintGeometry(), Outline,
+                    ESlateDrawEffect::None, Teal, true, 2.f);
             }
         }
 
@@ -127,13 +170,13 @@ public:
                     const FIntPoint At = PreviewCell + FIntPoint(Col, Row);
                     if (At.X >= 0 && At.X < UHumanFishingInventory::Columns && At.Y >= 0 && At.Y < UHumanFishingInventory::Rows)
                     {
-                        Draw(3, FVector2D(Cell.X * At.X, Cell.Y * At.Y) + FVector2D(2),
+                        Draw(4, FVector2D(Cell.X * At.X, Cell.Y * At.Y) + FVector2D(2),
                             Cell - FVector2D(4), WhiteBrush(), Color);
                     }
                 }
             }
         }
-        return Layer + 3;
+        return Layer + 4;
     }
 
     virtual FReply OnMouseButtonDown(const FGeometry& Geometry, const FPointerEvent& Event) override
@@ -155,11 +198,13 @@ public:
                 if (Relative.X >= 0 && Relative.X < Item.Size.X && Relative.Y >= 0 && Relative.Y < Item.Size.Y)
                 {
                     PressedId = Item.Id;
+                    Select(Item.Id);
                     PickupOffset = Cursor - FVector2D(Cell.X * Item.Cell.X, Cell.Y * Item.Cell.Y);
                     return FReply::Handled().DetectDrag(SharedThis(this), EKeys::LeftMouseButton);
                 }
             }
         }
+        Select(INDEX_NONE);
         return FReply::Handled();
     }
 
@@ -169,6 +214,7 @@ public:
         {
             return FReply::Unhandled();
         }
+        OnSelectionChanged.ExecuteIfBound();
         TSharedRef<FCatchDrag> Drag = MakeShared<FCatchDrag>();
         Drag->Id = PressedId;
         Drag->Offset = PickupOffset;
@@ -232,6 +278,8 @@ private:
 
     TWeakObjectPtr<UHumanFishingPlayerUI> PlayerUI;
     TMap<FName, FSlateBrush> Portraits;
+    FSimpleDelegate OnSelectionChanged;
+    int32 SelectedId = INDEX_NONE;
     int32 PressedId = INDEX_NONE;
     int32 PreviewId = INDEX_NONE;
     FIntPoint PreviewCell;
@@ -251,6 +299,7 @@ public:
         {
             Frame.SetResourceObject(Catalog->BackpackFrame.Get());
         }
+        SAssignNew(Grid, SBackpackGrid, UI).OnSelectionChanged(this, &SBackpackPanel::CancelDiscard);
 
         ChildSlot
         [
@@ -273,7 +322,7 @@ public:
                             + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Center)
                             [
                                 SNew(SBorder).Padding(0).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
-                                [ SAssignNew(Grid, SBackpackGrid, UI) ]
+                                [ Grid.ToSharedRef() ]
                             ]
                             + SOverlay::Slot()
                             [ SNew(SImage).Image(&Frame).Visibility(EVisibility::HitTestInvisible) ]
@@ -281,7 +330,44 @@ public:
                     ]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 10, 0, 0)
                     [
-                        SNew(STextBlock).Text(LOCTEXT("BackpackKeys", "Drag to rearrange     •     Tab / Esc to close"))
+                        SNew(SBox).WidthOverride(460).HeightOverride(80)
+                        [
+                            SNew(SBorder).Padding(FMargin(12, 8)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
+                            [
+                                SNew(SVerticalBox)
+                                + SVerticalBox::Slot().AutoHeight()
+                                [
+                                    SNew(STextBlock).Text(this, &SBackpackPanel::CatchDetails)
+                                    .Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
+                                    .ColorAndOpacity(FLinearColor(.92f, .97f, .98f))
+                                ]
+                                + SVerticalBox::Slot().AutoHeight().Padding(0, 7, 0, 0)
+                                [
+                                    SNew(SHorizontalBox)
+                                    + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
+                                    [
+                                        SNew(SButton)
+                                        .ContentPadding(FMargin(12, 5))
+                                        .Text_Lambda([this]() {
+                                            return IsConfirmingDiscard() ? LOCTEXT("ConfirmDiscard", "Confirm discard") : LOCTEXT("Discard", "Discard...");
+                                        })
+                                        .Visibility_Lambda([this]() { return Grid->SelectedCatch() ? EVisibility::Visible : EVisibility::Hidden; })
+                                        .OnClicked(this, &SBackpackPanel::DiscardSelected)
+                                    ]
+                                    + SHorizontalBox::Slot().AutoWidth()
+                                    [
+                                        SNew(SButton).Text(LOCTEXT("KeepCatch", "Keep"))
+                                        .ContentPadding(FMargin(12, 5))
+                                        .Visibility_Lambda([this]() { return IsConfirmingDiscard() ? EVisibility::Visible : EVisibility::Collapsed; })
+                                        .OnClicked_Lambda([this]() { CancelDiscard(); return FReply::Handled(); })
+                                    ]
+                                ]
+                            ]
+                        ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 10, 0, 0)
+                    [
+                        SNew(STextBlock).Text(LOCTEXT("BackpackKeys", "Click for value     •     Drag to rearrange     •     Tab / Esc to close"))
                         .Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
                         .ColorAndOpacity(FLinearColor(.72f, .84f, .87f))
                     ]
@@ -290,27 +376,212 @@ public:
         ];
     }
 
+    void ResetSelection()
+    {
+        FSlateApplication::Get().CancelDragDrop();
+        Grid->ClearPreview();
+        Grid->Select(INDEX_NONE);
+        CancelDiscard();
+    }
+
+private:
+    FText CatchDetails() const
+    {
+        const FHumanFishingCatch* Item = Grid->SelectedCatch();
+        if (!Item)
+        {
+            return LOCTEXT("SelectCatch", "Select a catch to see its value");
+        }
+        const UHumanFishingCatalog* Catalog = PlayerUI.IsValid() ? PlayerUI->GetCatalog() : nullptr;
+        const FHumanFishingCatchType* Profile = Lookup(PlayerUI.Get(), Item->Type);
+        const EHumanFishingRarity Rarity = Profile ? Profile->Rarity : EHumanFishingRarity::White;
+        return FText::Format(LOCTEXT("CatchDetails", "{0}  •  {1}  •  {2}×{3}  •  {4} Seaweed"),
+            Profile ? Profile->DisplayName : FText::FromName(Item->Type),
+            StaticEnum<EHumanFishingRarity>()->GetDisplayNameTextByValue(static_cast<int64>(Rarity)),
+            Item->Size.X, Item->Size.Y, Catalog ? Catalog->GetCatchSeaweedValue(*Item) : 0);
+    }
+
+    bool IsConfirmingDiscard() const
+    {
+        const FHumanFishingCatch* Item = Grid->SelectedCatch();
+        return Item && Item->Id == DiscardId;
+    }
+
+    void CancelDiscard()
+    {
+        DiscardId = INDEX_NONE;
+    }
+
+    FReply DiscardSelected()
+    {
+        const FHumanFishingCatch* Item = Grid->SelectedCatch();
+        UHumanFishingInventory* Inventory = PlayerUI.IsValid() ? PlayerUI->GetInventory() : nullptr;
+        if (Item && Inventory)
+        {
+            if (IsConfirmingDiscard())
+            {
+                Inventory->TryDiscardCatch(DiscardId);
+                Grid->Select(INDEX_NONE);
+                Grid->ClearPreview();
+            }
+            else
+            {
+                DiscardId = Item->Id;
+            }
+        }
+        return FReply::Handled();
+    }
+
+    TWeakObjectPtr<UHumanFishingPlayerUI> PlayerUI;
+    TSharedPtr<SBackpackGrid> Grid;
+    FSlateBrush Frame;
+    int32 DiscardId = INDEX_NONE;
+};
+
+class SFishingPausePanel : public SCompoundWidget
+{
+public:
+    SLATE_BEGIN_ARGS(SFishingPausePanel) {}
+    SLATE_END_ARGS()
+
+    void Construct(const FArguments&, UHumanFishingPlayerUI* UI)
+    {
+        PlayerUI = UI;
+        Backpack = SNew(SBackpackPanel, UI);
+        ChildSlot
+        [
+            SNew(SBorder).BorderImage(WhiteBrush()).BorderBackgroundColor(FLinearColor(.005f, .015f, .024f, .88f))
+            .HAlign(HAlign_Center).VAlign(VAlign_Center).Padding(14)
+            [
+                SNew(SScaleBox).Stretch(EStretch::ScaleToFit).StretchDirection(EStretchDirection::DownOnly)
+                [
+                    SNew(SVerticalBox)
+                    + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 8)
+                    [
+                        SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 6, 0)
+                        [ Tab(LOCTEXT("BackpackTab", "Backpack"), 0) ]
+                        + SHorizontalBox::Slot().AutoWidth()
+                        [ Tab(LOCTEXT("GuideTab", "Field Guide"), 1) ]
+                        + SHorizontalBox::Slot().FillWidth(1)
+                        [ SNew(SSpacer) ]
+                        + SHorizontalBox::Slot().AutoWidth()
+                        [
+                            SNew(SButton).Text(LOCTEXT("ClosePause", "Close")).ContentPadding(FMargin(14, 5))
+                            .OnClicked(this, &SFishingPausePanel::Close)
+                        ]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight()
+                    [
+                        SAssignNew(Pages, SWidgetSwitcher)
+                        + SWidgetSwitcher::Slot()[Backpack.ToSharedRef()]
+                        + SWidgetSwitcher::Slot()[MakeHumanFishingGuide(UI)]
+                    ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0, 8, 0, 0)
+                    [
+                        SNew(SHorizontalBox)
+                        + SHorizontalBox::Slot().AutoWidth()
+                        [
+                            SNew(SButton).ContentPadding(FMargin(14, 5))
+                            .Text_Lambda([this]()
+                            {
+                                const auto* Save = SaveSubsystem();
+                                return Save && Save->IsDeveloperMode() ? LOCTEXT("DiscardTest", "Discard Test & Return")
+                                    : LOCTEXT("SaveReturn", "Save & Return");
+                            })
+                            .OnClicked(this, &SFishingPausePanel::ReturnToMenu)
+                        ]
+                        + SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 8, 0)
+                        [
+                            SNew(SButton).Text(LOCTEXT("RetrySave", "Retry Save"))
+                            .Visibility(this, &SFishingPausePanel::SaveErrorVisibility)
+                            .OnClicked_Lambda([this]()
+                            {
+                                if (auto* Save = SaveSubsystem())
+                                {
+                                    Save->Flush();
+                                }
+                                return FReply::Handled();
+                            })
+                        ]
+                        + SHorizontalBox::Slot().FillWidth(1).VAlign(VAlign_Center)
+                        [
+                            SNew(STextBlock).Text(LOCTEXT("SaveError", "Save failed. The previous save is available."))
+                            .ColorAndOpacity(FLinearColor(1.f, .58f, .35f))
+                            .Visibility(this, &SFishingPausePanel::SaveErrorVisibility)
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    }
+
+    void Reset()
+    {
+        Backpack->ResetSelection();
+        Pages->SetActiveWidgetIndex(0);
+    }
+
     virtual bool SupportsKeyboardFocus() const override { return true; }
 
     virtual FReply OnPreviewKeyDown(const FGeometry&, const FKeyEvent& Event) override
     {
         if (Event.GetKey() == EKeys::Tab || Event.GetKey() == EKeys::Escape)
         {
-            if (!Event.IsRepeat() && PlayerUI.IsValid())
-            {
-                FSlateApplication::Get().CancelDragDrop();
-                Grid->ClearPreview();
-                PlayerUI->SetBackpackOpen(false);
-            }
-            return FReply::Handled();
+            return Event.IsRepeat() ? FReply::Handled() : Close();
         }
         return FReply::Unhandled();
     }
 
 private:
+    UHumanFishingSaveSubsystem* SaveSubsystem() const
+    {
+        return PlayerUI.IsValid() ? PlayerUI->GetSaveSubsystem() : nullptr;
+    }
+
+    EVisibility SaveErrorVisibility() const
+    {
+        const auto* Save = SaveSubsystem();
+        return Save && Save->HasSaveError() ? EVisibility::Visible : EVisibility::Collapsed;
+    }
+
+    TSharedRef<SWidget> Tab(FText Text, int32 Index)
+    {
+        return SNew(SButton).Text(Text).ContentPadding(FMargin(16, 6))
+            .ButtonColorAndOpacity_Lambda([this, Index]()
+            {
+                return Pages && Pages->GetActiveWidgetIndex() == Index ? Teal : FLinearColor(.56f, .65f, .66f);
+            })
+            .OnClicked_Lambda([this, Index]()
+            {
+                Backpack->ResetSelection();
+                Pages->SetActiveWidgetIndex(Index);
+                return FReply::Handled();
+            });
+    }
+
+    FReply Close()
+    {
+        Reset();
+        if (PlayerUI.IsValid())
+        {
+            PlayerUI->SetBackpackOpen(false);
+        }
+        return FReply::Handled();
+    }
+
+    FReply ReturnToMenu()
+    {
+        if (auto* Save = SaveSubsystem())
+        {
+            Save->ReturnToMenu(PlayerUI->GetWorld());
+        }
+        return FReply::Handled();
+    }
+
     TWeakObjectPtr<UHumanFishingPlayerUI> PlayerUI;
-    TSharedPtr<SBackpackGrid> Grid;
-    FSlateBrush Frame;
+    TSharedPtr<SBackpackPanel> Backpack;
+    TSharedPtr<SWidgetSwitcher> Pages;
 };
 
 class SHealthReadout : public SCompoundWidget
@@ -373,7 +644,12 @@ public:
         {
             for (const auto& Pair : Catalog->Types)
             {
-                Portraits.Add(Pair.Key).SetResourceObject(Pair.Value.Portrait.Get());
+                if (const UTexture2D* Texture = Pair.Value.Portrait.Get())
+                {
+                    FSlateBrush& Brush = Portraits.Add(Pair.Key);
+                    Brush.SetResourceObject(Pair.Value.Portrait.Get());
+                    Brush.SetImageSize(FVector2D(Texture->GetSizeX(), Texture->GetSizeY()));
+                }
             }
         }
 
@@ -384,8 +660,11 @@ public:
                 SNew(SHorizontalBox)
                 + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 11, 0)
                 [
-                    SNew(SBox).WidthOverride(32).HeightOverride(64)
-                    [ SNew(SImage).Image_Lambda([this]() { return Portraits.Find(ActiveType()); }) ]
+                    SNew(SBox).WidthOverride(64).HeightOverride(64)
+                    [
+                        SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+                        [ SNew(SImage).Image_Lambda([this]() { return Portraits.Find(ActiveType()); }) ]
+                    ]
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
@@ -405,6 +684,16 @@ public:
                             return Type ? Type->DisplayName : FText::GetEmpty();
                         })
                     ]
+                    + SVerticalBox::Slot().AutoHeight().Padding(0, 5, 0, 0)
+                    [
+                        SNew(STextBlock).Text(LOCTEXT("NewGuide", "New Field Guide Entry"))
+                        .Font(FCoreStyle::GetDefaultFontStyle("Bold", 12)).ColorAndOpacity(Teal)
+                        .Visibility_Lambda([this]()
+                        {
+                            return PlayerUI.IsValid() && PlayerUI->IsNewGuideToast() ? EVisibility::Visible
+                                : EVisibility::Collapsed;
+                        })
+                    ]
                 ]
             ]
         ];
@@ -422,8 +711,9 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
 {
     const TWeakObjectPtr<UHumanFishingPlayerUI> Weak(InPlayerUI);
     const TSharedRef<SCaptureToast> Toast = SNew(SCaptureToast, InPlayerUI);
-    const TSharedRef<SBackpackPanel> Panel = SNew(SBackpackPanel, InPlayerUI);
-    Backpack = Panel;
+    const TSharedRef<SFishingPausePanel> Panel = SNew(SFishingPausePanel, InPlayerUI);
+    PausePanel = Panel;
+    ResetPage = FSimpleDelegate::CreateSP(Panel, &SFishingPausePanel::Reset);
     Panel->SetVisibility(TAttribute<EVisibility>::CreateLambda([Weak]()
     {
         return Weak.IsValid() && Weak->IsBackpackOpen() ? EVisibility::Visible : EVisibility::Collapsed;
@@ -441,6 +731,16 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
         [ SNew(SHealthReadout, InPlayerUI).Visibility(EVisibility::HitTestInvisible) ]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0, 20, 20, 0)
         [ Toast ]
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0, 20, 0, 0)
+        [
+            SNew(STextBlock).Text(LOCTEXT("AutosaveWarning", "Autosave failed. Open Tab to retry."))
+            .ColorAndOpacity(FLinearColor(1.f, .60f, .37f))
+            .Visibility_Lambda([Weak]()
+            {
+                const auto* Save = Weak.IsValid() ? Weak->GetSaveSubsystem() : nullptr;
+                return Save && Save->HasSaveError() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+            })
+        ]
         + SOverlay::Slot()
         [ Panel ]
     ];
