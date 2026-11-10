@@ -5,6 +5,7 @@
 #include "UObject/Interface.h"
 #include "HumanFishingPlayerUI.generated.h"
 
+class AHUD;
 class APlayerController;
 class SHumanFishingHUD;
 class USpringArmComponent;
@@ -105,6 +106,9 @@ public:
 
     UFUNCTION(BlueprintCallable, Category="Human Fishing|Backpack")
     static void ShowCaptureToast(APawn* Fish, FName Type);
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|HUD")
+    static FVector ProjectFishingStatus(const AHUD* HUD, FVector WorldPosition);
 
     UFUNCTION(BlueprintCallable, Category="Human Fishing|Camera")
     static void UpdateFishingCamera(APawn* Fish, bool bFishing);

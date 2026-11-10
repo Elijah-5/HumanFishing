@@ -146,7 +146,7 @@ FAutoConsoleCommandWithWorldArgsAndOutputDevice AHumanFishingBeachCrowd::Develop
                         : TEXT("Developer mode is already off."));
                     return;
                 }
-                for (TActorIterator<AHumanFishingBeachCrowd> Crowd(World); Crowd; ++Crowd)
+                if (TActorIterator<AHumanFishingBeachCrowd> Crowd(World); Crowd)
                 {
                     Crowd->RunDeveloperCommand(Args, Output);
                     return;

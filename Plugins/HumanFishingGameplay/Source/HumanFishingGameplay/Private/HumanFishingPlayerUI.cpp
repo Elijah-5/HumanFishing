@@ -185,6 +185,32 @@ int32 UHumanFishingBlueprintLibrary::GetSeaweedBalance(const UObject* WorldConte
     return Inventory ? Inventory->GetSeaweed() : 0;
 }
 
+FVector UHumanFishingBlueprintLibrary::ProjectFishingStatus(const AHUD* HUD, FVector WorldPosition)
+{
+    const APlayerController* Controller = HUD ? HUD->GetOwningPlayerController() : nullptr;
+    int32 Width = 0;
+    int32 Height = 0;
+    if (Controller)
+    {
+        Controller->GetViewportSize(Width, Height);
+    }
+    if (Width <= 0 || Height <= 0)
+    {
+        return FVector::ZeroVector;
+    }
+
+    const FVector Head = HUD->Project(WorldPosition);
+    // Leave room for the caption above the ring and for the ring itself.
+    if (Head.Z > 0. && Head.X >= 64. && Head.X <= Width - 64. &&
+        Head.Y >= 42. && Head.Y <= Height - 24.)
+    {
+        return Head;
+    }
+
+    // Keep the active status above the fishing prompt when the visitor is out of frame.
+    return FVector(Width * .5, FMath::Max(42., Height - 126.), 1.);
+}
+
 void UHumanFishingPlayerUI::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
     ResetFishingCamera();

@@ -53,7 +53,7 @@ UHumanFishingSaveGame* ReadSlot(const FString& Name)
     {
         return nullptr;
     }
-    Bytes.SetNum(PayloadSize, false);
+    Bytes.SetNum(PayloadSize);
     return Cast<UHumanFishingSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes));
 }
 

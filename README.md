@@ -2,7 +2,7 @@
 
 Swim to shore, lure visitors with bait, reel them in, and make room for your catches as you explore new fishing spots.
 
-A Blueprint project for Unreal Engine 5.2.1.
+A Blueprint and C++ project for Unreal Engine 5.8.4.
 
 ## Movement and health
 
@@ -101,14 +101,15 @@ are measured per second.
 
 ## Run the project
 
-Open `HumanFishing.uproject`. The standalone game opens the save slot menu.
+Install Unreal Engine 5.8.4 and open `HumanFishing.uproject` with that editor.
+The standalone game opens the save slot menu.
 In the editor, play `L_SaveMenu` to use a save slot or `L_ShorePrototype` for
 a temporary session. Test the **Esc** aim-cancel input in **Standalone Game**,
 since **Esc** stops Play in Editor by default.
 
-On a fresh checkout, build the `HumanFishingGameplay` plugin with the Unreal
-Engine 5.2 C++ toolchain for your platform when the editor prompts you to
-rebuild project modules.
+On a fresh checkout, accept the editor's prompt to rebuild the
+`HumanFishingGameplay` plugin with the C++ toolchain for your platform.
+On Apple Silicon, the project was verified with Xcode 26.6.
 
 ## Developer mode
 

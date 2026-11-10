@@ -48,6 +48,16 @@ class FCatchDrag : public FDragDropOperation
 {
 public:
     DRAG_DROP_OPERATOR_TYPE(FCatchDrag, FDragDropOperation)
+
+    static TSharedRef<FCatchDrag> New(int32 InId, FVector2D InOffset)
+    {
+        const TSharedRef<FCatchDrag> Drag = MakeShared<FCatchDrag>();
+        Drag->Id = InId;
+        Drag->Offset = InOffset;
+        Drag->Construct();
+        return Drag;
+    }
+
     int32 Id = INDEX_NONE;
     FVector2D Offset;
 };
@@ -215,11 +225,7 @@ public:
             return FReply::Unhandled();
         }
         OnSelectionChanged.ExecuteIfBound();
-        TSharedRef<FCatchDrag> Drag = MakeShared<FCatchDrag>();
-        Drag->Id = PressedId;
-        Drag->Offset = PickupOffset;
-        Drag->Construct();
-        return FReply::Handled().BeginDragDrop(Drag);
+        return FReply::Handled().BeginDragDrop(FCatchDrag::New(PressedId, PickupOffset));
     }
 
     virtual FReply OnDragOver(const FGeometry& Geometry, const FDragDropEvent& Event) override
