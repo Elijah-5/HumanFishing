@@ -25,18 +25,23 @@ The fish has 100 HP. Landing on the beach drains 10 HP per second, including
 while jumping. Returning to the shallows stops the damage. At zero HP, the cast
 ends and the fish respawns in the deep ocean, where it recovers 20 HP per second.
 
-Every 10–16 seconds a visitor can enter from either end of the 18×30 meter
-beach, up to six at a time. Visitors walk inland, wander and pause, then walk
-out. Once a dollar lands, visitors staying within 6 meters can build interest.
-The gold ring shows the most interested visitor. The first visitor to fill
-the ring walks to the bait, then their interest starts draining.
-Interest builds at its fastest within one meter and slows gradually out to
-six meters. A visitor who notices bait from farther away may observe it longer.
+Press **B** before casting to switch between Dollar Bait and Flash Bait.
+Both are unlimited and available from the start. The HUD shows your selection,
+which carries across areas for the current session. Every 10–16 seconds a
+visitor can enter from either end of the beach, up to six at a time. Arriving
+and wandering visitors can notice bait within their detection radius if they
+have a path to it. Interest builds fastest within one meter.
 
-If a visitor loses interest or cannot reach the bait before being hooked, the
-same dollar can attract another visitor. Press **E** to retrieve it while
-waiting or while a visitor is approaching. At the hook prompt, **E** hooks and
-**X** retrieves. Bait stays out while waiting for another visitor.
+With Dollar Bait, the first visitor to fill their interest ring approaches.
+Flash Bait gives the highest eligible rarity priority, then breaks ties by
+interest and distance. It builds interest twice as fast and gives each visitor
+four more seconds to be hooked after they reach the bait.
+
+Press **Q** to skip an approaching or inspecting visitor. They resume their
+route, and the same bait waits for someone else. The skipped visitor can
+respond again on the next cast. Press **E** to retrieve the bait while waiting
+or while a visitor is approaching. At the hook prompt, **E** hooks and **X**
+retrieves.
 
 Press **E** at the hook prompt, release it, then hold **E** to reel. The blue ring
 shows line durability and turns red at 25%. Releasing **E** pauses the pull while
@@ -49,6 +54,23 @@ returns to patrol if the backpack has no room for the catch.
 When a worker braces, release **E** to avoid extra line wear during the next
 tug. To catch a diver, cast from the water and reel them past the shore until
 they touch the fish.
+
+### Elijah
+
+Elijah is a red-tier visitor in Scenic Cove. His character model follows the
+[front, side, and back turnaround](docs/media/elijah-turnaround.png), with a
+rebuilt head, solid-color skin, and a faceted center-parted haircut. He wears an
+academic gown, carries a mortarboard and teddy bear, and has dedicated idle,
+bait-inspection, and brace animations.
+
+Elijah braces at 25%, 50%, and 75% of the reel bar. Each mark pauses movement,
+progress, and normal line wear. Release **E** during the one-second countdown
+beside the durability ring and keep it released through the tug. The result
+appears for 0.45 seconds. Holding through the tug costs 32 durability. Hold **E**
+again after the result to continue reeling. A catch requires all three marks
+and at least 2.4 seconds of active reeling, even on a short line.
+
+### Backpack and field guide
 
 Press **Tab** to pause and open the 4×4 backpack. A beach tourist occupies one
 column and two rows. Click a catch to see its name, rarity, size, and total
@@ -79,7 +101,9 @@ measured per second.
 | Delivery rider | Blue | 2×2 | 12 | 1.45× | 18 | 11 |
 | Businessman | Purple | 1×3 | 15 | 1.70× | 20 | 17 |
 | Surf instructor | Purple | 3×1 | 15 | 0.85× | 18 | 18 |
+| Photographer | Gold | 3×2 | 48 | 0.72× | 22 | 20 |
 | Diver | Gold | 2×3 | 48 | 0.65× | 25 | 22 |
+| Elijah | Red | 3×3 | 117 | 0.53× | 19 | 9 |
 
 The `HumanFishingGameplay` project plugin provides the backpack and health UI.
 On a fresh checkout, build the plugin with the UE 5.2 C++ toolchain for your
@@ -96,6 +120,7 @@ open the UE console with the backtick key (below Esc on a US keyboard).
 | `hf.dev on` | Start a temporary test, reveal the full Field Guide and pause random arrivals. |
 | `hf.dev list` | List the visitor IDs in the current catalog. |
 | `hf.dev spawn Diver` | Spawn a specific visitor on the beach near the fish. Replace `Diver` with any listed ID. |
+| `hf.dev spawn Elijah` | Spawn Elijah to practice his brace and release timing. |
 | `hf.dev off` | Restore progress and the area from before the test. |
 
 Manual spawns bypass rarity, unlocks, and the crowd cap. They use the normal
@@ -104,10 +129,21 @@ to the menu or quitting discards the temporary test progress.
 
 ## Deep ocean travel
 
-From the shoreline, turn away from the beach and continue swimming offshore. Crossing
-the offshore boundary loads `L_DeepOcean` automatically. In the ocean, turn
-back toward the edge you arrived from and swim to that boundary to return to shore.
-There is no interaction button. Only actors of the fish player Blueprint activate travel.
+From the shoreline, turn away from the beach and swim offshore to enter the
+deep ocean. The boundary behind you leads back to the original shore. Swim
+toward the opposite edge and rise to the rock arch to enter Scenic Cove. Swim
+offshore from the cove to return to the arch side of the deep ocean. The fish
+triggers travel by swimming into the passage.
+
+Scenic Cove uses spawn weights of 25 white, 15 green, 20 blue, 20 purple,
+20 gold, and 2 red. Only rarities with an eligible visitor enter the roll.
+The photographer and diver become eligible after three lifetime catches.
+With all five standard rarities eligible, a Cove roll has a 20% chance of
+gold, compared with about 5% at the original shore. Elijah joins the Cove pool
+at six catches and takes 2 of 102 weight when all six rarities are eligible.
+The photographer and Elijah stop spawning after their first catch in a save
+slot. The diver can reappear. A save continued in Scenic Cove starts at the
+Cove's safe spawn point.
 
 The deep-ocean blockout has a larger swim area, an 18-meter-deep seabed, rocks, water
 surface, and blue haze. Movement uses the existing fish Blueprint and the same controls.
@@ -123,6 +159,7 @@ The upper-left HUD reads the inventory subsystem through `GetCaptureCount` and
 | --- | --- |
 | `Content/HumanFishing/Maps/L_ShorePrototype` | Test map with a beach, a bounded swim area, and a graybox base |
 | `Content/HumanFishing/Maps/L_DeepOcean` | Offshore swimming blockout with a return route |
+| `Content/HumanFishing/Maps/L_ScenicCove` | Second beach beyond the deep ocean with its own visitor spawn weights |
 | `Content/HumanFishing/Travel/BP_LevelTravelZone` | Fish-triggered level travel with an editable DestinationMap |
 | `Content/HumanFishing/Maps/L_SaveMenu` | Start or continue one of three save slots |
 | `Content/HumanFishing/Core/BP_HumanFishingGameInstance` | Game-instance Blueprint used by the project |

@@ -56,7 +56,7 @@ const FHumanFishingRarityRules& UHumanFishingCatalog::GetRarityRules(EHumanFishi
         {12, {28, 38}, 3, FLinearColor(.08f, .26f, .53f)},
         {8, {22, 30}, 5, FLinearColor(.30f, .14f, .45f)},
         {5, {14, 22}, 8, FLinearColor(.55f, .35f, .07f)},
-        {2, {9, 15}, 13, FLinearColor(.51f, .11f, .13f)},
+        {0, {9, 15}, 13, FLinearColor(.51f, .11f, .13f)},
     };
     static_assert(UE_ARRAY_COUNT(Rules) == static_cast<int32>(EHumanFishingRarity::Count));
     const int32 Index = static_cast<int32>(Rarity);

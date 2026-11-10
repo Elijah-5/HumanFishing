@@ -729,6 +729,25 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
         SNew(SOverlay)
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24, 136, 0, 0)
         [ SNew(SHealthReadout, InPlayerUI).Visibility(EVisibility::HitTestInvisible) ]
+        + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24, 184, 0, 0)
+        [
+            SNew(SBorder).Padding(FMargin(10, 6)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
+            .Visibility_Lambda([Weak]()
+            {
+                return Weak.IsValid() && !Weak->IsDeepOcean() && !Weak->IsBackpackOpen()
+                    ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+            })
+            [
+                SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
+                .Text_Lambda([Weak]()
+                {
+                    const auto* Data = Weak.IsValid() ? Weak->GetInventory() : nullptr;
+                    return Data && Data->GetSelectedBait() == EHumanFishingBait::Flash
+                        ? LOCTEXT("FlashBait", "Flash Bait  ·  B Switch")
+                        : LOCTEXT("DollarBait", "Dollar Bait  ·  B Switch");
+                })
+            ]
+        ]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0, 20, 20, 0)
         [ Toast ]
         + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0, 20, 0, 0)

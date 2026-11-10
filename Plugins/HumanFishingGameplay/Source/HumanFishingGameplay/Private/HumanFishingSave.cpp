@@ -11,6 +11,7 @@
 DEFINE_LOG_CATEGORY_STATIC(LogHumanFishingSave, Log, All);
 
 const FName UHumanFishingSaveSubsystem::ShoreLevel(TEXT("L_ShorePrototype"));
+const FName UHumanFishingSaveSubsystem::CoveLevel(TEXT("L_ScenicCove"));
 const FName UHumanFishingSaveSubsystem::OceanLevel(TEXT("L_DeepOcean"));
 const FName UHumanFishingSaveSubsystem::MenuLevel(TEXT("L_SaveMenu"));
 
@@ -20,9 +21,14 @@ constexpr int32 SaveVersion = 1;
 constexpr int32 ChecksumSize = sizeof(uint32);
 constexpr double HealthSaveInterval = 5.;
 
+bool IsBeachLevel(FName Level)
+{
+    return Level == UHumanFishingSaveSubsystem::ShoreLevel || Level == UHumanFishingSaveSubsystem::CoveLevel;
+}
+
 bool IsPlayableLevel(FName Level)
 {
-    return Level == UHumanFishingSaveSubsystem::ShoreLevel || Level == UHumanFishingSaveSubsystem::OceanLevel;
+    return IsBeachLevel(Level) || Level == UHumanFishingSaveSubsystem::OceanLevel;
 }
 
 FString SlotName(int32 Slot, int32 Generation)
@@ -130,7 +136,7 @@ UHumanFishingSaveGame* UHumanFishingSaveSubsystem::WriteSlot(int32 Slot, int32 G
     Save->Version = SaveVersion;
     Save->Revision = Revision;
     Save->Progress = Progress;
-    Save->Level = Level == ShoreLevel && Progress.Health <= 0.f ? OceanLevel : Level;
+    Save->Level = IsBeachLevel(Level) && Progress.Health <= 0.f ? OceanLevel : Level;
     Save->SavedAt = FDateTime::UtcNow();
     const FString Name = SlotName(Slot, Generation);
     TArray<uint8> Bytes;
@@ -174,6 +180,7 @@ bool UHumanFishingSaveSubsystem::StartSlot(UWorld* World, int32 Slot, bool bNewG
     }
 
     Inventory->Progress = Save->Progress;
+    Inventory->SelectedBait = EHumanFishingBait::Dollar;
     ActiveSlot = Slot;
     ActiveGeneration = Generation;
     ActiveRevision = Save->Revision;
@@ -197,6 +204,7 @@ bool UHumanFishingSaveSubsystem::ReturnToMenu(UWorld* World)
     ResumeLevel = NAME_None;
     bDirty = bSaveError = false;
     Inventory->Progress = FHumanFishingProgress{};
+    Inventory->SelectedBait = EHumanFishingBait::Dollar;
     OpenLevel(World, MenuLevel);
     return true;
 }

@@ -10,6 +10,7 @@
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "HumanFishingInventory.h"
@@ -26,10 +27,18 @@ const FName Tourist(TEXT("BeachTourist"));
 constexpr float EdgeInset = 115.f;
 constexpr float ArrivalRadius = 75.f;
 constexpr float FullInterest = 100.f;
+constexpr double FlashInterestMultiplier = 2.;
+constexpr double FlashInspectBonusSeconds = 4.;
 constexpr double PulsePeriod = 2.2;
 constexpr double PulseWarning = 1.3;
 constexpr double BurstStart = 1.7;
 constexpr double BurstWear = 18.;
+constexpr double BraceMarks[] = {.25, .50, .75};
+constexpr double BraceWarning = 1.;
+constexpr double BraceFeedback = .45;
+constexpr double BraceWear = 32.;
+constexpr double MinPullSeconds = 2.4;
+constexpr double DryCatchRadius = 55.;
 constexpr double DiverLandSpeed = 330.;
 constexpr double DiverWaterSpeed = 460.;
 constexpr double DiverReturnSpeed = 300.;
@@ -367,7 +376,9 @@ FName AHumanFishingBeachCrowd::ChooseType() const
     {
         if (!Eligible[Index].IsEmpty())
         {
-            Weights[Index] = UHumanFishingCatalog::GetRarityRules(static_cast<EHumanFishingRarity>(Index)).SpawnWeight;
+            const auto Rarity = static_cast<EHumanFishingRarity>(Index);
+            const int32* Override = SpawnWeightOverrides.Find(Rarity);
+            Weights[Index] = Override ? FMath::Max(0, *Override) : UHumanFishingCatalog::GetRarityRules(Rarity).SpawnWeight;
             TotalWeight += Weights[Index];
         }
     }
@@ -578,6 +589,14 @@ bool AHumanFishingBeachCrowd::AdvanceVisitor(FVisitor& Visitor, ACharacter& Pawn
     return false;
 }
 
+void AHumanFishingBeachCrowd::ToggleBait()
+{
+    if (auto* Inventory = GetGameInstance()->GetSubsystem<UHumanFishingInventory>())
+    {
+        Inventory->ToggleBait();
+    }
+}
+
 bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Goal, double Appeal,
     ACharacter*& Candidate, double& Interest)
 {
@@ -590,9 +609,17 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
 
     const bool bNewCast = ObservedCast != CastId;
     ObservedCast = CastId;
+    if (bNewCast)
+    {
+        const auto* Inventory = GetGameInstance()->GetSubsystem<UHumanFishingInventory>();
+        bFlashBait = Inventory && Inventory->GetSelectedBait() == EHumanFishingBait::Flash;
+    }
     const double Now = GetWorld()->GetTimeSeconds();
     const double Delta = GetWorld()->GetDeltaSeconds();
+    const double AppealPerTick = FullInterest * FMath::Max(0., Appeal) * Delta *
+        (bFlashBait ? FlashInterestMultiplier : 1.);
     double BestDistance = TNumericLimits<double>::Max();
+    int32 BestPriority = INDEX_NONE;
 
     for (FVisitor& Visitor : Visitors)
     {
@@ -604,8 +631,8 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
             Visitor.CheckPathAfter = 0;
         }
         if (!Pawn || Pawn->IsActorBeingDestroyed() || !Profile || Visitor.IgnoredCast == CastId ||
-            Visitor.Phase != EVisitPhase::Staying || Visitor.WaterPhase == EWaterReelPhase::Returning ||
-            Now >= Visitor.StayUntil)
+            Visitor.Phase == EVisitPhase::Leaving || Visitor.WaterPhase == EWaterReelPhase::Returning ||
+            (Visitor.Phase == EVisitPhase::Staying && Now >= Visitor.StayUntil))
         {
             continue;
         }
@@ -629,14 +656,16 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
         }
 
         const double DistanceFactor = FMath::Lerp(.50, .25, FMath::Clamp((Distance - 100.) / 500., 0., 1.));
-        const double Gain = FullInterest * FMath::Max(0., Appeal) * Profile->MoneyPreference *
-            Profile->InterestGainMultiplier * DistanceFactor * Delta;
+        const double Gain = AppealPerTick * Profile->MoneyPreference * Profile->InterestGainMultiplier * DistanceFactor;
         Visitor.Interest = FMath::Clamp(Visitor.Interest + Gain, 0., static_cast<double>(FullInterest));
-        if (Visitor.Interest > Interest || (Visitor.Interest > 0 && Visitor.Interest == Interest && Distance < BestDistance))
+        const int32 Priority = bFlashBait ? static_cast<int32>(Profile->Rarity) : 0;
+        if (Visitor.Interest > 0 && (Priority > BestPriority || (Priority == BestPriority &&
+            (Visitor.Interest > Interest || (Visitor.Interest == Interest && Distance < BestDistance)))))
         {
             Candidate = Pawn;
             Interest = Visitor.Interest;
             BestDistance = Distance;
+            BestPriority = Priority;
         }
     }
 
@@ -673,8 +702,12 @@ bool AHumanFishingBeachCrowd::ReleaseTarget(ACharacter* Pedestrian)
     {
         const double Now = GetWorld()->GetTimeSeconds();
         Visitor->RouteAfter = Now + .5;
-        Visitor->StayUntil += Now - HeldSince;
+        if (Visitor->Phase == EVisitPhase::Staying)
+        {
+            Visitor->StayUntil += Now - HeldSince;
+        }
         Visitor->bReelActive = Visitor->bPulling = false;
+        Visitor->Brace = {};
         if (const auto* Profile = FindProfile(Visitor))
         {
             Pedestrian->GetCharacterMovement()->MaxWalkSpeed = Profile->WalkSpeed;
@@ -712,7 +745,8 @@ FName AHumanFishingBeachCrowd::GetCatchType(const ACharacter* Pedestrian) const
 double AHumanFishingBeachCrowd::GetInterestDecay(const ACharacter* Pedestrian) const
 {
     const FHumanFishingCatchType* Profile = FindProfile(FindVisitor(Pedestrian));
-    return Profile ? Profile->InterestDecayPerSecond : 8.;
+    const double Decay = Profile ? Profile->InterestDecayPerSecond : 8.;
+    return bFlashBait ? FullInterest * Decay / (FullInterest + FlashInspectBonusSeconds * Decay) : Decay;
 }
 
 double AHumanFishingBeachCrowd::GetLineWear(const ACharacter* Pedestrian) const
@@ -731,6 +765,28 @@ bool AHumanFishingBeachCrowd::IsWaterReel(const ACharacter* Pedestrian) const
 {
     const FVisitor* Visitor = FindVisitor(Pedestrian);
     return Visitor && (Visitor->WaterPhase == EWaterReelPhase::Crossing || Visitor->WaterPhase == EWaterReelPhase::InWater);
+}
+
+bool AHumanFishingBeachCrowd::UsesBraceReel(const ACharacter* Pedestrian) const
+{
+    const auto* Profile = FindProfile(FindVisitor(Pedestrian));
+    return Profile && Profile->Struggle == EHumanFishingStruggle::CapFeint;
+}
+
+bool AHumanFishingBeachCrowd::CanStartSpecialReel(const ACharacter* Pedestrian) const
+{
+    return IsWaterReel(Pedestrian) || UsesBraceReel(Pedestrian);
+}
+
+bool AHumanFishingBeachCrowd::UsesSpecialReel(const ACharacter* Pedestrian) const
+{
+    return NeedsWaterContact(Pedestrian) || UsesBraceReel(Pedestrian);
+}
+
+bool AHumanFishingBeachCrowd::HasMissedBrace(const ACharacter* Pedestrian) const
+{
+    const auto* Visitor = FindVisitor(Pedestrian);
+    return Visitor && Visitor->Brace.IsBracing() && Visitor->Brace.bMissed;
 }
 
 FString AHumanFishingBeachCrowd::GetInterestCaption(const ACharacter* Pedestrian) const
@@ -753,6 +809,18 @@ FString AHumanFishingBeachCrowd::GetReelPrompt(const ACharacter* Pedestrian, con
     {
         return TEXT("Release E to brace");
     }
+    if (Profile->Struggle == EHumanFishingStruggle::CapFeint)
+    {
+        const auto& Brace = Visitor->Brace;
+        if (Brace.IsBracing())
+        {
+            if (Brace.bStruck)
+            {
+                return Brace.bMissed ? TEXT("-32 durability") : TEXT("Brace avoided");
+            }
+            return Visitor->bPulling ? TEXT("Elijah is bracing | Release E") : TEXT("Keep E released");
+        }
+    }
     return IsWaterReel(Pedestrian) ? TEXT("Hold E to pull the diver to you") : DefaultText;
 }
 
@@ -773,6 +841,12 @@ void AHumanFishingBeachCrowd::BeginReelSession(ACharacter* Pedestrian, const ACh
     Visitor->bPulling = false;
     Visitor->ReelStartedAt = GetWorld()->GetTimeSeconds();
     Visitor->LastWearSample = Visitor->ExtraWear = 0.;
+    if (UsesBraceReel(Pedestrian))
+    {
+        Visitor->Brace = {};
+        Visitor->Brace.StartDistance = FVector::Dist2D(Pedestrian->GetActorLocation(), ShoreGoal);
+        Visitor->ShoreGoal = ShoreGoal;
+    }
     if (NeedsWaterContact(Pedestrian))
     {
         Visitor->ShoreGoal = ShoreGoal;
@@ -791,6 +865,10 @@ void AHumanFishingBeachCrowd::SetReelInput(ACharacter* Pedestrian, bool bPulling
     if (FVisitor* Visitor = FindVisitor(Pedestrian); Visitor && Visitor->bReelActive)
     {
         SampleLineWear(Pedestrian);
+        if (bPulling && !Visitor->bPulling && UsesBraceReel(Pedestrian))
+        {
+            Visitor->Brace.bNeedsRoute = true;
+        }
         Visitor->bPulling = bPulling;
     }
 }
@@ -815,8 +893,152 @@ double AHumanFishingBeachCrowd::SampleLineWear(ACharacter* Pedestrian)
             Anim->ShowStruggle(FMath::Fmod(Elapsed, PulsePeriod) - PulseWarning);
         }
     }
+    else if (Profile->Struggle == EHumanFishingStruggle::CapFeint)
+    {
+        SampleBrace(*Visitor, *Pedestrian, Elapsed);
+    }
     Visitor->LastWearSample = Elapsed;
-    return Elapsed * Profile->LineWearPerSecond + Visitor->ExtraWear;
+    const double WearSeconds = Profile->Struggle == EHumanFishingStruggle::CapFeint
+        ? Visitor->Brace.WearSeconds : Elapsed;
+    return WearSeconds * Profile->LineWearPerSecond + Visitor->ExtraWear;
+}
+
+void AHumanFishingBeachCrowd::SampleBrace(FVisitor& Visitor, ACharacter& Pawn, double Elapsed)
+{
+    FBraceReel& Brace = Visitor.Brace;
+    double WearFrom = Visitor.LastWearSample;
+    if (Brace.IsBracing())
+    {
+        const double CueTime = Elapsed - Brace.CueStarted;
+        if (!Brace.bStruck && CueTime >= BraceWarning)
+        {
+            Brace.bStruck = true;
+            Brace.bMissed = Visitor.bPulling;
+            if (Brace.bMissed)
+            {
+                Visitor.ExtraWear += BraceWear;
+            }
+        }
+        WearFrom = FMath::Max(WearFrom, Brace.CueStarted + BraceWarning + BraceFeedback);
+        if (Elapsed >= WearFrom)
+        {
+            Brace.CueStarted = -1.;
+            Brace.bNeedsRoute = true;
+            ++Brace.Resolved;
+        }
+    }
+    const double OutsideBrace = FMath::Max(0., Elapsed - WearFrom);
+    Brace.WearSeconds += OutsideBrace;
+    if (Visitor.bPulling)
+    {
+        Brace.PullSeconds += OutsideBrace;
+    }
+    if (auto* Anim = VisitorAnimation(Pawn))
+    {
+        Anim->ShowStruggle(Brace.IsBracing() ? Elapsed - Brace.CueStarted : -1.);
+    }
+}
+
+int32 AHumanFishingBeachCrowd::AdvanceSpecialReel(ACharacter* Pedestrian, const ACharacter* Fish, double& Progress)
+{
+    if (UsesBraceReel(Pedestrian))
+    {
+        if (auto* Visitor = FindVisitor(Pedestrian); Visitor && Visitor->bReelActive && Visitor->bPulling)
+        {
+            return AdvanceBraceReel(*Visitor, *Pedestrian, Progress);
+        }
+        Progress = 0.;
+        return -1;
+    }
+    return AdvanceContactReel(Pedestrian, Fish, Progress);
+}
+
+int32 AHumanFishingBeachCrowd::AdvanceBraceReel(FVisitor& Visitor, ACharacter& Pawn, double& Progress)
+{
+    FBraceReel& Brace = Visitor.Brace;
+    Progress = Brace.Progress;
+    if (Brace.IsBracing())
+    {
+        return 0;
+    }
+
+    const double Distance = FVector::Dist2D(Pawn.GetActorLocation(), Visitor.ShoreGoal);
+    const double Travel = FMath::Clamp(1. - FMath::Max(0., Distance - DryCatchRadius) /
+        FMath::Max(1., Brace.StartDistance - DryCatchRadius), 0., 1.);
+    Brace.Progress = FMath::Max(Brace.Progress, FMath::Min(Travel, Brace.PullSeconds / MinPullSeconds));
+    auto* AI = Cast<AAIController>(Pawn.GetController());
+    if (Brace.Resolved < UE_ARRAY_COUNT(BraceMarks) && Brace.Progress >= BraceMarks[Brace.Resolved])
+    {
+        Brace.Progress = Progress = BraceMarks[Brace.Resolved];
+        Brace.CueStarted = Visitor.LastWearSample;
+        Brace.bStruck = Brace.bMissed = false;
+        if (AI)
+        {
+            AI->StopMovement();
+        }
+        Pawn.GetCharacterMovement()->StopMovementImmediately();
+        return 0;
+    }
+    Progress = Brace.Progress;
+    if (Distance <= DryCatchRadius)
+    {
+        return Progress >= 1. ? 1 : 0;
+    }
+    if (Brace.bNeedsRoute)
+    {
+        Brace.bNeedsRoute = false;
+        return AI && CanReach(Pawn, Visitor.ShoreGoal) &&
+            AI->MoveToLocation(Visitor.ShoreGoal, 40., false, true, true, false, nullptr, false) !=
+                EPathFollowingRequestResult::Failed ? 0 : -1;
+    }
+    return AI && AI->GetMoveStatus() != EPathFollowingStatus::Idle ? 0 : -1;
+}
+
+void AHumanFishingBeachCrowd::DrawBraceReel(AHUD* HUD, const ACharacter* Pedestrian, int32 SizeX, int32 SizeY) const
+{
+    const auto* Visitor = FindVisitor(Pedestrian);
+    if (!HUD || !Visitor || !Visitor->bReelActive || !UsesBraceReel(Pedestrian))
+    {
+        return;
+    }
+    const FBraceReel& Brace = Visitor->Brace;
+    const FLinearColor Ink(.02f, .035f, .06f, .94f);
+    const FLinearColor Amber(1.f, .70f, .22f);
+    const FLinearColor Mint(.25f, .95f, .71f);
+    const FLinearColor Coral(1.f, .32f, .24f);
+    const FLinearColor CueColor = !Brace.bStruck ? Amber : (Brace.bMissed ? Coral : Mint);
+    const FLinearColor Resolved(.54f, .63f, .70f);
+    const float BarX = SizeX * .5f - 158.f;
+    const float BarY = SizeY - 50.f;
+    for (int32 Index = 0; Index < UE_ARRAY_COUNT(BraceMarks); ++Index)
+    {
+        const float X = BarX + 316.f * BraceMarks[Index];
+        const bool bCurrent = Brace.IsBracing() && Index == Brace.Resolved;
+        const FLinearColor Color = bCurrent ? CueColor : Index < Brace.Resolved ? Resolved : Amber;
+        const float Width = bCurrent ? 8.f : 4.f;
+        HUD->DrawRect(Ink, X - Width * .5f - 1.f, BarY - 5.f, Width + 2.f, 18.f);
+        HUD->DrawRect(Color, X - Width * .5f, BarY - 4.f, Width, 16.f);
+    }
+
+    if (!Brace.IsBracing())
+    {
+        return;
+    }
+    const FVector Ring = HUD->Project(Pedestrian->GetMesh()->GetSocketLocation(TEXT("Head")) + FVector(0., 0., 39.));
+    if (Ring.Z <= 0.)
+    {
+        return;
+    }
+    const float X = FMath::Clamp(static_cast<float>(Ring.X) + 31.f, 12.f, FMath::Max(12.f, SizeX - 206.f));
+    const float Y = FMath::Clamp(static_cast<float>(Ring.Y) - 24.f, 12.f, FMath::Max(12.f, SizeY - 136.f));
+    const double CueTime = GetWorld()->GetTimeSeconds() - Visitor->ReelStartedAt - Brace.CueStarted;
+    const FString Label = Brace.bStruck ? (Brace.bMissed ? TEXT("-32 durability") : TEXT("Brace avoided"))
+        : FString::Printf(TEXT("%s  %.1fs"), Visitor->bPulling ? TEXT("RELEASE E") : TEXT("KEEP E UP"),
+            FMath::CeilToDouble(FMath::Max(0., BraceWarning - CueTime) * 10.) / 10.);
+    HUD->DrawRect(Ink, X, Y, 194.f, 38.f);
+    HUD->DrawText(Label, CueColor, X + 9.f, Y + 6.f, nullptr, 1.55f);
+    const float Fill = Brace.bStruck ? 1.f : FMath::Clamp(1. - CueTime / BraceWarning, 0., 1.);
+    HUD->DrawRect(CueColor, X + 9.f, Y + 31.f, 176.f * Fill, 3.f);
 }
 
 int32 AHumanFishingBeachCrowd::AdvanceContactReel(ACharacter* Pedestrian, const ACharacter* Fish, double& Progress)

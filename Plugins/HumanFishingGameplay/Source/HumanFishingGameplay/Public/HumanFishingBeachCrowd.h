@@ -1,14 +1,14 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
+#include "HumanFishingInventory.h"
 #include "HumanFishingBeachCrowd.generated.h"
 
 class ACharacter;
 class AAIController;
+class AHUD;
 class FAutoConsoleCommandWithWorldArgsAndOutputDevice;
 class UAnimMontage;
-class UHumanFishingCatalog;
-struct FHumanFishingCatchType;
 
 UCLASS()
 class HUMANFISHINGGAMEPLAY_API AHumanFishingBeachCrowd : public AActor
@@ -35,6 +35,12 @@ public:
 
     UPROPERTY(EditAnywhere, Category="Beach", meta=(ClampMin="0.25"))
     float SpawnIntervalMax = 16.f;
+
+    UPROPERTY(EditInstanceOnly, Category="Beach")
+    TMap<EHumanFishingRarity, int32> SpawnWeightOverrides;
+
+    UFUNCTION(BlueprintCallable, Category="Beach")
+    void ToggleBait();
 
     UFUNCTION(BlueprintPure, Category="Beach")
     bool IsOnBeach(FVector Position) const;
@@ -65,6 +71,18 @@ public:
     bool IsWaterReel(const ACharacter* Pedestrian) const;
 
     UFUNCTION(BlueprintPure, Category="Beach")
+    bool CanStartSpecialReel(const ACharacter* Pedestrian) const;
+
+    UFUNCTION(BlueprintPure, Category="Beach")
+    bool UsesSpecialReel(const ACharacter* Pedestrian) const;
+
+    UFUNCTION(BlueprintPure, Category="Beach")
+    bool HasMissedBrace(const ACharacter* Pedestrian) const;
+
+    UFUNCTION(BlueprintCallable, Category="Beach")
+    void DrawBraceReel(AHUD* HUD, const ACharacter* Pedestrian, int32 SizeX, int32 SizeY) const;
+
+    UFUNCTION(BlueprintPure, Category="Beach")
     FString GetInterestCaption(const ACharacter* Pedestrian) const;
 
     UFUNCTION(BlueprintPure, Category="Beach")
@@ -86,6 +104,10 @@ public:
     UFUNCTION(BlueprintCallable, Category="Beach")
     int32 AdvanceContactReel(ACharacter* Pedestrian, const ACharacter* Fish, double& Progress);
 
+    // The same result codes as AdvanceContactReel, also used for Elijah's dry reel.
+    UFUNCTION(BlueprintCallable, Category="Beach")
+    int32 AdvanceSpecialReel(ACharacter* Pedestrian, const ACharacter* Fish, double& Progress);
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaSeconds) override;
@@ -104,6 +126,21 @@ private:
         Crossing,
         InWater,
         Returning
+    };
+
+    struct FBraceReel
+    {
+        double StartDistance = 0.;
+        double PullSeconds = 0.;
+        double WearSeconds = 0.;
+        double Progress = 0.;
+        double CueStarted = -1.;
+        int32 Resolved = 0;
+        bool bStruck = false;
+        bool bMissed = false;
+        bool bNeedsRoute = false;
+
+        bool IsBracing() const { return CueStarted >= 0.; }
     };
 
     struct FVisitor
@@ -126,6 +163,7 @@ private:
         FVector WaterAnchor = FVector::ZeroVector;
         FVector FishAnchor = FVector::ZeroVector;
         EWaterReelPhase WaterPhase = EWaterReelPhase::Dry;
+        FBraceReel Brace;
         int32 IgnoredCast = INDEX_NONE;
         bool bReelActive = false;
         bool bPulling = false;
@@ -148,6 +186,9 @@ private:
     bool FindInlandPoint(ACharacter& Pawn, bool bRoaming, FVector& Destination) const;
     bool ProjectToBeach(FVector Point, FVector& Projected) const;
     bool CanReach(ACharacter& Pawn, FVector Goal) const;
+    bool UsesBraceReel(const ACharacter* Pedestrian) const;
+    void SampleBrace(FVisitor& Visitor, ACharacter& Pawn, double Elapsed);
+    int32 AdvanceBraceReel(FVisitor& Visitor, ACharacter& Pawn, double& Progress);
     FVector SidePoint(bool bNorth) const;
     FName ChooseType() const;
     FVisitor* FindVisitor(const ACharacter* Pedestrian);
@@ -163,4 +204,5 @@ private:
     int32 ObservedCast = INDEX_NONE;
     int32 RepeatedSide = 0;
     bool bLastSpawnNorth = false;
+    bool bFlashBait = false;
 };

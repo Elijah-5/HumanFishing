@@ -54,6 +54,7 @@ public:
 
     UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
     bool IsBackpackOpen() const { return bBackpackOpen; }
+    bool IsDeepOcean() const { return bDeepOcean; }
 
     const UHumanFishingCatalog* GetCatalog() const { return Catalog.Get(); }
     UHumanFishingInventory* GetInventory() const;

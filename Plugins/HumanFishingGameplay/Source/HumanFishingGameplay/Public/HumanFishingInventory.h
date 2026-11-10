@@ -11,11 +11,18 @@ class UStaticMesh;
 class UAnimSequence;
 class UAnimMontage;
 
+enum class EHumanFishingBait : uint8
+{
+    Dollar,
+    Flash
+};
+
 UENUM(BlueprintType)
 enum class EHumanFishingStruggle : uint8
 {
     Steady,
-    Pulse
+    Pulse,
+    CapFeint
 };
 
 UENUM(BlueprintType)
@@ -236,6 +243,11 @@ public:
     int32 GetLifetimeCatchCount() const { return Progress.NextId; }
     bool HasCaughtType(FName Type) const { return Progress.CaughtTypes.Contains(Type); }
     const FHumanFishingProgress& GetProgress() const { return Progress; }
+    EHumanFishingBait GetSelectedBait() const { return SelectedBait; }
+    void ToggleBait()
+    {
+        SelectedBait = SelectedBait == EHumanFishingBait::Dollar ? EHumanFishingBait::Flash : EHumanFishingBait::Dollar;
+    }
     const FHumanFishingCatch* FindCatch(int32 Id) const;
     bool CanPlace(FIntPoint Cell, FIntPoint Size, int32 IgnoreId = INDEX_NONE) const;
 
@@ -269,4 +281,6 @@ private:
 
     UPROPERTY()
     FHumanFishingProgress Progress;
+
+    EHumanFishingBait SelectedBait = EHumanFishingBait::Dollar;
 };

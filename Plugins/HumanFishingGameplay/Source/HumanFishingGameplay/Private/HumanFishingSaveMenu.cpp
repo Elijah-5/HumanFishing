@@ -106,8 +106,15 @@ private:
     TSharedRef<SWidget> MakeSlot(int32 Slot)
     {
         const auto& Summary = Summaries[Slot];
-        const FText Area = Summary.Level == UHumanFishingSaveSubsystem::OceanLevel
-            ? LOCTEXT("Ocean", "Deep Ocean") : LOCTEXT("Shore", "Shore");
+        FText Area = LOCTEXT("Shore", "Shore");
+        if (Summary.Level == UHumanFishingSaveSubsystem::OceanLevel)
+        {
+            Area = LOCTEXT("Ocean", "Deep Ocean");
+        }
+        else if (Summary.Level == UHumanFishingSaveSubsystem::CoveLevel)
+        {
+            Area = LOCTEXT("Cove", "Scenic Cove");
+        }
         const FText Description = Summary.bReadable
             ? FText::Format(LOCTEXT("Stats", "{0}\n{1} captures\n{2}/{3} discovered\nSaved {4}"),
                 Area, Summary.Captures, Summary.Discovered, TypeCount,
