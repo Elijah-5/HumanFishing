@@ -1,0 +1,16 @@
+{
+  "FileVersion": 3,
+  "Version": 1,
+  "VersionName": "1.0",
+  "FriendlyName": "Human Fishing Gameplay",
+  "Description": "Session inventory, player health, and gameplay UI.",
+  "Category": "Gameplay",
+  "EnabledByDefault": true,
+  "Modules": [
+    {
+      "Name": "HumanFishingGameplay",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ]
+}
