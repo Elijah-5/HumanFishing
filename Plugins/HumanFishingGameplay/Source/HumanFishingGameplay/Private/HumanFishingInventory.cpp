@@ -166,3 +166,34 @@ void UHumanFishingInventory::NotifyChange(bool bImmediate)
         Save->ProgressChanged(bImmediate);
     }
 }
+
+int32 UHumanFishingInventory::GetRedemptionValue(const UHumanFishingCatalog* Catalog) const
+{
+    if (!Catalog || Progress.Catches.IsEmpty())
+    {
+        return 0;
+    }
+    int32 Total = 0;
+    for (const FHumanFishingCatch& Catch : Progress.Catches)
+    {
+        const int32 Value = Catalog->GetCatchSeaweedValue(Catch);
+        if (Value <= 0)
+        {
+            return 0;
+        }
+        Total += Value;
+    }
+    return Total;
+}
+
+int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)
+{
+    const int32 Value = GetRedemptionValue(Catalog);
+    if (Value > 0)
+    {
+        Progress.Catches.Reset();
+        Progress.Seaweed += Value;
+        NotifyChange();
+    }
+    return Value;
+}

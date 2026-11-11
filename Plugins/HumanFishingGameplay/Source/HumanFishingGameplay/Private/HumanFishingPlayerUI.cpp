@@ -138,7 +138,7 @@ bool UHumanFishingPlayerUI::IsNewGuideToast() const
 void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
 {
     APlayerController* Controller = GetLocalController();
-    if (!Controller || !Overlay || bBackpackOpen == bOpen || !UGameplayStatics::SetGamePaused(this, bOpen))
+    if ((bOpen && bShopOpen) || !Controller || !Overlay || bBackpackOpen == bOpen || !UGameplayStatics::SetGamePaused(this, bOpen))
     {
         return;
     }

@@ -284,6 +284,9 @@ public:
     UFUNCTION(BlueprintCallable, Category="Human Fishing|Progress")
     void SetSeaweed(int32 Amount);
 
+    int32 GetRedemptionValue(const UHumanFishingCatalog* Catalog) const;
+    int32 RedeemCatches(const UHumanFishingCatalog* Catalog);
+
     void ChangeHealth(float Amount);
 
 private:

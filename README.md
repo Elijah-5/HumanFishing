@@ -59,6 +59,12 @@ after you discard the catch.
 
 ![A catch in the backpack and the Field Guide tab with visitor notes](docs/media/backpack-and-field-guide.gif)
 
+## Ocean shop
+
+Swim up to the Seaweed Exchange stall in the deep ocean press E to trade.
+Redeem the catches in your backpack for seaweed. Then, use the seaweed to
+purchase upgrades. Press E, Esc, Tab, or Close to return to swimming.
+
 ## Exploration and saves
 
 Swim offshore from the beach to enter the deep ocean. One boundary leads back

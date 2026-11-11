@@ -54,6 +54,8 @@ public:
 
     UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
     bool IsBackpackOpen() const { return bBackpackOpen; }
+    void SetShopOpen(bool bOpen) { bShopOpen = bOpen; }
+    bool IsShopOpen() const { return bShopOpen; }
     bool IsDeepOcean() const { return bDeepOcean; }
 
     const UHumanFishingCatalog* GetCatalog() const { return Catalog.Get(); }
@@ -80,6 +82,7 @@ private:
     bool bOnBeach = false;
     bool bEvacuating = false;
     bool bBackpackOpen = false;
+    bool bShopOpen = false;
     FName ToastType;
     FName NewGuideType;
     double ToastUntil = 0;
