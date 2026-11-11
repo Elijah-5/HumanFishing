@@ -10,7 +10,8 @@ Move with **WASD** and look with the mouse. In the water, look up or down and
 press **W** to rise or dive. On land, press **Space** to jump.
 
 The fish has 100 HP and loses 10 HP per second while on the beach, including
-while jumping. Returning to the shallows stops the damage. In the deep ocean,
+while jumping. The Mudskipper upgrade halves this to 5 HP per second. Returning
+to the shallows stops the damage. In the deep ocean,
 the fish recovers 20 HP per second. At zero HP, the current cast ends and the
 fish respawns in the deep ocean.
 
@@ -64,6 +65,10 @@ after you discard the catch.
 Swim up to the Seaweed Exchange stall in the deep ocean press E to trade.
 Redeem the catches in your backpack for seaweed. Then, use the seaweed to
 purchase upgrades. Press E, Esc, Tab, or Close to return to swimming.
+
+Mudskipper costs 25 seaweed and halves damage on land. Buy it once per save
+slot; the shop then marks it as Owned. The other eight squares are reserved
+for future upgrades.
 
 ## Exploration and saves
 

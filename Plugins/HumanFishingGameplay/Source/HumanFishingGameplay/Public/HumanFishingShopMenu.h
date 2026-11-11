@@ -28,10 +28,19 @@ private:
     UFUNCTION()
     void RedeemAll();
 
+    UFUNCTION()
+    void BuyMudskipper();
+
     void Refresh();
 
     UPROPERTY(meta=(BindWidget))
     TObjectPtr<UButton> SellAllButton;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UButton> MudskipperButton;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UTextBlock> MudskipperPrice;
 
     UPROPERTY(meta=(BindWidget))
     TObjectPtr<UButton> CloseButton;

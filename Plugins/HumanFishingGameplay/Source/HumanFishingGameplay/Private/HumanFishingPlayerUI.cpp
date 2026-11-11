@@ -96,7 +96,8 @@ bool UHumanFishingPlayerUI::AdvanceBeachHealth(bool bInWater, bool bGrounded)
         return false;
     }
 
-    Inventory->ChangeHealth(-BeachDamagePerSecond * GetWorld()->GetDeltaSeconds());
+    const float DamageMultiplier = Inventory->HasMudskipper() ? .5f : 1.f;
+    Inventory->ChangeHealth(-BeachDamagePerSecond * DamageMultiplier * GetWorld()->GetDeltaSeconds());
     bEvacuating = Inventory->GetHealth() <= 0.f;
     return bEvacuating;
 }

@@ -36,4 +36,27 @@ bool FHumanFishingShopRedemption::RunTest(const FString& Parameters)
     TestTrue(TEXT("Progress remains valid"), Inventory->GetProgress().IsValid());
     return true;
 }
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingMudskipperPurchase,
+    "HumanFishing.Shop.Mudskipper", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FHumanFishingMudskipperPurchase::RunTest(const FString& Parameters)
+{
+    auto* Game = NewObject<UGameInstance>();
+    auto* Inventory = NewObject<UHumanFishingInventory>(Game);
+    TestFalse(TEXT("New progress has no Mudskipper"), Inventory->HasMudskipper());
+    Inventory->SetSeaweed(UHumanFishingInventory::MudskipperCost - 1);
+    TestFalse(TEXT("Insufficient funds cannot buy upgrade"), Inventory->BuyMudskipper());
+    TestEqual(TEXT("Failed purchase keeps balance"), Inventory->GetSeaweed(), 24);
+    TestFalse(TEXT("Failed purchase keeps upgrade locked"), Inventory->HasMudskipper());
+    Inventory->SetSeaweed(UHumanFishingInventory::MudskipperCost);
+    TestTrue(TEXT("Exact funds buy upgrade"), Inventory->BuyMudskipper());
+    TestEqual(TEXT("Purchase deducts price"), Inventory->GetSeaweed(), 0);
+    TestTrue(TEXT("Upgrade owned"), Inventory->HasMudskipper());
+    Inventory->SetSeaweed(200);
+    TestFalse(TEXT("Upgrade cannot be bought twice"), Inventory->BuyMudskipper());
+    TestEqual(TEXT("Repeat purchase keeps balance"), Inventory->GetSeaweed(), 200);
+    TestTrue(TEXT("Progress remains valid"), Inventory->GetProgress().IsValid());
+    return true;
+}
+
 #endif

@@ -197,3 +197,15 @@ int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)
     }
     return Value;
 }
+
+bool UHumanFishingInventory::BuyMudskipper()
+{
+    if (Progress.bHasMudskipper || Progress.Seaweed < MudskipperCost)
+    {
+        return false;
+    }
+    Progress.Seaweed -= MudskipperCost;
+    Progress.bHasMudskipper = true;
+    NotifyChange();
+    return true;
+}

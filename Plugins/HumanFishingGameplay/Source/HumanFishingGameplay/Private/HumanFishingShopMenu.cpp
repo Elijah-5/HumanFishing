@@ -21,6 +21,7 @@ void UHumanFishingShopMenu::NativeOnInitialized()
     Super::NativeOnInitialized();
     SellAllButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::RedeemAll);
     CloseButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::CloseShop);
+    MudskipperButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::BuyMudskipper);
 }
 
 void UHumanFishingShopMenu::NativeConstruct()
@@ -85,6 +86,18 @@ void UHumanFishingShopMenu::RedeemAll()
     Refresh();
 }
 
+void UHumanFishingShopMenu::BuyMudskipper()
+{
+    if (const auto* UI = GetPlayerUI())
+    {
+        if (auto* Inventory = UI->GetInventory())
+        {
+            Inventory->BuyMudskipper();
+        }
+    }
+    Refresh();
+}
+
 void UHumanFishingShopMenu::Refresh()
 {
     const auto* UI = GetPlayerUI();
@@ -99,6 +112,12 @@ void UHumanFishingShopMenu::Refresh()
         ? FText::Format(LOCTEXT("TotalQuote", "Redeem all catches for {0} seaweed."), Payout)
         : LOCTEXT("Empty", "Bring catches from your backpack to trade for seaweed."));
     SellAllButton->SetIsEnabled(Payout > 0);
+
+    const bool bOwned = Inventory && Inventory->HasMudskipper();
+    MudskipperButton->SetIsEnabled(!bOwned && Seaweed >= UHumanFishingInventory::MudskipperCost);
+    MudskipperPrice->SetText(bOwned
+        ? LOCTEXT("Owned", "Owned")
+        : FText::Format(LOCTEXT("UpgradePrice", "{0} seaweed"), UHumanFishingInventory::MudskipperCost));
 }
 
 #undef LOCTEXT_NAMESPACE

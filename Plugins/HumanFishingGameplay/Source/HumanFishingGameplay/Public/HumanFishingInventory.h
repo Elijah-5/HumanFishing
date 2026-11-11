@@ -186,6 +186,9 @@ struct FHumanFishingProgress
     UPROPERTY()
     float Health = 100.f;
 
+    UPROPERTY()
+    bool bHasMudskipper = false;
+
     bool IsValid() const;
 };
 
@@ -250,6 +253,7 @@ public:
     static constexpr int32 Columns = 4;
     static constexpr int32 Rows = 4;
     static constexpr float MaxHealth = 100.f;
+    static constexpr int32 MudskipperCost = 25;
 
     const TArray<FHumanFishingCatch>& GetCatches() const { return Progress.Catches; }
     int32 GetLifetimeCatchCount() const { return Progress.NextId; }
@@ -286,6 +290,9 @@ public:
 
     int32 GetRedemptionValue(const UHumanFishingCatalog* Catalog) const;
     int32 RedeemCatches(const UHumanFishingCatalog* Catalog);
+
+    bool HasMudskipper() const { return Progress.bHasMudskipper; }
+    bool BuyMudskipper();
 
     void ChangeHealth(float Amount);
 
