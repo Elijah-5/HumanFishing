@@ -27,8 +27,6 @@ const FName Tourist(TEXT("BeachTourist"));
 constexpr float EdgeInset = 115.f;
 constexpr float ArrivalRadius = 75.f;
 constexpr float FullInterest = 100.f;
-constexpr double FlashInterestMultiplier = 2.;
-constexpr double FlashInspectBonusSeconds = 4.;
 constexpr double PulsePeriod = 2.2;
 constexpr double PulseWarning = 1.3;
 constexpr double BurstStart = 1.7;
@@ -44,6 +42,12 @@ constexpr double DiverLandSpeed = 305.;
 constexpr double DiverWaterSpeed = 345.;
 constexpr double DiverWaterWear = 8.;
 constexpr double DiverReturnSpeed = 300.;
+
+double GetDecayWithInspectionBonus(double DecayPerSecond, double BonusSeconds)
+{
+    // Convert extra inspection time at full interest into a slower decay rate.
+    return DecayPerSecond / (1. + BonusSeconds * DecayPerSecond / FullInterest);
+}
 
 double BurstSeconds(double Elapsed)
 {
@@ -606,9 +610,7 @@ void AHumanFishingBeachCrowd::SetCastBaitMesh(UStaticMeshComponent* Visual) cons
     {
         return;
     }
-    UStaticMesh* Mesh = Inventory->GetSelectedBait() == EHumanFishingBait::Flash && Catalog->FlashBaitMesh
-        ? Catalog->FlashBaitMesh.Get() : Catalog->DollarBaitMesh.Get();
-    if (Mesh)
+    if (auto* Mesh = Catalog->GetBaitDefinition(Inventory->GetSelectedBait()).Mesh)
     {
         Visual->SetStaticMesh(Mesh);
     }
@@ -629,12 +631,13 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
     if (bNewCast)
     {
         const auto* Inventory = GetGameInstance()->GetSubsystem<UHumanFishingInventory>();
-        bFlashBait = Inventory && Inventory->GetSelectedBait() == EHumanFishingBait::Flash;
+        CastBait = Inventory ? Inventory->GetSelectedBait() : EHumanFishingBait::Dollar;
     }
     const double Now = GetWorld()->GetTimeSeconds();
     const double Delta = GetWorld()->GetDeltaSeconds();
-    const double AppealPerTick = FullInterest * FMath::Max(0., Appeal) * Delta *
-        (bFlashBait ? FlashInterestMultiplier : 1.);
+    const auto* BaitCatalog = Catalog ? Catalog.Get() : GetDefault<UHumanFishingCatalog>();
+    const auto Definition = BaitCatalog->GetBaitDefinition(CastBait);
+    const double AppealPerTick = FullInterest * FMath::Max(0., Appeal) * Delta * Definition.InterestMultiplier;
     double BestDistance = TNumericLimits<double>::Max();
     int32 BestPriority = INDEX_NONE;
 
@@ -647,7 +650,7 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
             Visitor.Interest = 0;
             Visitor.CheckPathAfter = 0;
         }
-        if (!Pawn || Pawn->IsActorBeingDestroyed() || !Profile || Visitor.IgnoredCast == CastId ||
+        if (!Pawn || Pawn->IsActorBeingDestroyed() || !Profile || !Profile->AcceptsBait(CastBait) || Visitor.IgnoredCast == CastId ||
             Visitor.Phase == EVisitPhase::Leaving || Visitor.WaterPhase == EWaterReelPhase::Returning ||
             (Visitor.Phase == EVisitPhase::Staying && Now >= Visitor.StayUntil))
         {
@@ -675,7 +678,7 @@ bool AHumanFishingBeachCrowd::ObserveBait(int32 CastId, FVector Bait, FVector Go
         const double DistanceFactor = FMath::Lerp(.50, .25, FMath::Clamp((Distance - 100.) / 500., 0., 1.));
         const double Gain = AppealPerTick * Profile->MoneyPreference * Profile->InterestGainMultiplier * DistanceFactor;
         Visitor.Interest = FMath::Clamp(Visitor.Interest + Gain, 0., static_cast<double>(FullInterest));
-        const int32 Priority = bFlashBait ? static_cast<int32>(Profile->Rarity) : 0;
+        const int32 Priority = Definition.bPrioritizeRarity ? static_cast<int32>(Profile->Rarity) : 0;
         if (Visitor.Interest > 0 && (Priority > BestPriority || (Priority == BestPriority &&
             (Visitor.Interest > Interest || (Visitor.Interest == Interest && Distance < BestDistance)))))
         {
@@ -763,7 +766,8 @@ double AHumanFishingBeachCrowd::GetInterestDecay(const ACharacter* Pedestrian) c
 {
     const FHumanFishingCatchType* Profile = FindProfile(FindVisitor(Pedestrian));
     const double Decay = Profile ? Profile->InterestDecayPerSecond : 8.;
-    return bFlashBait ? FullInterest * Decay / (FullInterest + FlashInspectBonusSeconds * Decay) : Decay;
+    const auto* BaitCatalog = Catalog ? Catalog.Get() : GetDefault<UHumanFishingCatalog>();
+    return GetDecayWithInspectionBonus(Decay, BaitCatalog->GetBaitDefinition(CastBait).InspectBonusSeconds);
 }
 
 double AHumanFishingBeachCrowd::GetLineWear(const ACharacter* Pedestrian) const

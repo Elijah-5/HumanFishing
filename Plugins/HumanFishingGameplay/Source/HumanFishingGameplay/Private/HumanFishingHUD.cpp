@@ -717,18 +717,26 @@ private:
 void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPlayerUI)
 {
     const TWeakObjectPtr<UHumanFishingPlayerUI> Weak(InPlayerUI);
-    const auto IsFlashBait = [Weak]()
+    const UHumanFishingCatalog* Catalog = InPlayerUI->GetCatalog();
+    if (!Catalog)
+    {
+        Catalog = GetDefault<UHumanFishingCatalog>();
+    }
+    BaitReadouts.SetNum(static_cast<int32>(EHumanFishingBait::Count));
+    for (int32 Index = 0; Index < BaitReadouts.Num(); ++Index)
+    {
+        const auto Definition = Catalog->GetBaitDefinition(static_cast<EHumanFishingBait>(Index));
+        auto& Readout = BaitReadouts[Index];
+        Readout.Portrait.SetResourceObject(Definition.Portrait);
+        Readout.Portrait.SetImageSize(FVector2D(42.f, 42.f));
+        Readout.Text = FText::Format(LOCTEXT("BaitSwitch", "{0}  ·  B Switch"), Definition.Name);
+    }
+    const auto GetBaitReadout = [this, Weak]() -> const FBaitReadout&
     {
         const auto* Data = Weak.IsValid() ? Weak->GetInventory() : nullptr;
-        return Data && Data->GetSelectedBait() == EHumanFishingBait::Flash;
+        const auto Bait = Data ? Data->GetSelectedBait() : EHumanFishingBait::Dollar;
+        return BaitReadouts[static_cast<int32>(Bait)];
     };
-    if (const UHumanFishingCatalog* Catalog = InPlayerUI->GetCatalog())
-    {
-        DollarBaitPortrait.SetResourceObject(Catalog->DollarBaitPortrait.Get());
-        FlashBaitPortrait.SetResourceObject(Catalog->FlashBaitPortrait.Get());
-        DollarBaitPortrait.SetImageSize(FVector2D(42.f, 42.f));
-        FlashBaitPortrait.SetImageSize(FVector2D(42.f, 42.f));
-    }
     const TSharedRef<SCaptureToast> Toast = SNew(SCaptureToast, InPlayerUI);
     const TSharedRef<SFishingPausePanel> Panel = SNew(SFishingPausePanel, InPlayerUI);
     PausePanel = Panel;
@@ -760,19 +768,12 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
                 SNew(SHorizontalBox)
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0, 0, 5, 0)
                 [
-                    SNew(SImage).Image_Lambda([this, IsFlashBait]() -> const FSlateBrush*
-                    {
-                        return IsFlashBait() ? &FlashBaitPortrait : &DollarBaitPortrait;
-                    })
+                    SNew(SImage).Image_Lambda([GetBaitReadout]() { return &GetBaitReadout().Portrait; })
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
                     SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
-                    .Text_Lambda([IsFlashBait]()
-                    {
-                        return IsFlashBait() ? LOCTEXT("FlashBait", "Flash Bait  ·  B Switch")
-                            : LOCTEXT("DollarBait", "Dollar Bait  ·  B Switch");
-                    })
+                    .Text_Lambda([GetBaitReadout]() { return GetBaitReadout().Text; })
                 ]
             ]
         ]

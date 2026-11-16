@@ -14,7 +14,19 @@ class UAnimMontage;
 enum class EHumanFishingBait : uint8
 {
     Dollar,
-    Flash
+    Flash,
+    HundredDollarBill,
+    Count
+};
+
+struct FHumanFishingBaitDefinition
+{
+    FText Name;
+    UStaticMesh* Mesh;
+    UTexture2D* Portrait;
+    double InterestMultiplier = 1.;
+    double InspectBonusSeconds = 0.;
+    bool bPrioritizeRarity = false;
 };
 
 UENUM(BlueprintType)
@@ -99,6 +111,14 @@ struct FHumanFishingCatchType
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Beach")
     EHumanFishingStruggle Struggle = EHumanFishingStruggle::Steady;
+
+    UPROPERTY(EditAnywhere, Category="Beach")
+    bool bRequiresHundredDollarBill = false;
+
+    bool AcceptsBait(EHumanFishingBait Bait) const
+    {
+        return !bRequiresHundredDollarBill || Bait == EHumanFishingBait::HundredDollarBill;
+    }
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Beach")
     EHumanFishingCatchFinish CatchFinish = EHumanFishingCatchFinish::Shore;
@@ -189,6 +209,12 @@ struct FHumanFishingProgress
     UPROPERTY()
     bool bHasMudskipper = false;
 
+    UPROPERTY()
+    bool bHasBraidedLine = false;
+
+    UPROPERTY()
+    bool bHasHundredDollarBill = false;
+
     bool IsValid() const;
 };
 
@@ -208,10 +234,16 @@ public:
     TObjectPtr<UStaticMesh> FlashBaitMesh;
 
     UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UStaticMesh> HundredDollarBillMesh;
+
+    UPROPERTY(EditAnywhere, Category="Bait")
     TObjectPtr<UTexture2D> DollarBaitPortrait;
 
     UPROPERTY(EditAnywhere, Category="Bait")
     TObjectPtr<UTexture2D> FlashBaitPortrait;
+
+    UPROPERTY(EditAnywhere, Category="Bait")
+    TObjectPtr<UTexture2D> HundredDollarBillPortrait;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TObjectPtr<UTexture2D> BackpackFrame;
@@ -237,6 +269,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Field Guide")
     TObjectPtr<UTexture2D> GuideLockIcon;
 
+    FHumanFishingBaitDefinition GetBaitDefinition(EHumanFishingBait Bait) const;
     static const FHumanFishingRarityRules& GetRarityRules(EHumanFishingRarity Rarity);
 
     UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
@@ -254,16 +287,15 @@ public:
     static constexpr int32 Rows = 4;
     static constexpr float MaxHealth = 100.f;
     static constexpr int32 MudskipperCost = 25;
+    static constexpr int32 BraidedLineCost = 40;
+    static constexpr int32 HundredDollarBillCost = 30;
 
     const TArray<FHumanFishingCatch>& GetCatches() const { return Progress.Catches; }
     int32 GetLifetimeCatchCount() const { return Progress.NextId; }
     bool HasCaughtType(FName Type) const { return Progress.CaughtTypes.Contains(Type); }
     const FHumanFishingProgress& GetProgress() const { return Progress; }
     EHumanFishingBait GetSelectedBait() const { return SelectedBait; }
-    void ToggleBait()
-    {
-        SelectedBait = SelectedBait == EHumanFishingBait::Dollar ? EHumanFishingBait::Flash : EHumanFishingBait::Dollar;
-    }
+    void ToggleBait();
     const FHumanFishingCatch* FindCatch(int32 Id) const;
     bool CanPlace(FIntPoint Cell, FIntPoint Size, int32 IgnoreId = INDEX_NONE) const;
 
@@ -294,11 +326,17 @@ public:
     bool HasMudskipper() const { return Progress.bHasMudskipper; }
     bool BuyMudskipper();
 
+    bool HasBraidedLine() const { return Progress.bHasBraidedLine; }
+    bool BuyBraidedLine();
+    bool HasHundredDollarBill() const { return Progress.bHasHundredDollarBill; }
+    bool BuyHundredDollarBill();
+
     void ChangeHealth(float Amount);
 
 private:
     friend class UHumanFishingSaveSubsystem;
 
+    bool BuyUpgrade(int32 Cost, bool& bOwned);
     void NotifyChange(bool bImmediate = true);
 
     UPROPERTY()

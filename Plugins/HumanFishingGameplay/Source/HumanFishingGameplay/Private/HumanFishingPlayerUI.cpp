@@ -180,6 +180,12 @@ int32 UHumanFishingBlueprintLibrary::GetCaptureCount(const UObject* WorldContext
     return Inventory ? Inventory->GetLifetimeCatchCount() : 0;
 }
 
+double UHumanFishingBlueprintLibrary::GetLineCapacity(const UObject* WorldContextObject, double BaseCapacity)
+{
+    const auto* Inventory = ProgressInventory(WorldContextObject);
+    return Inventory && Inventory->HasBraidedLine() ? BaseCapacity * 1.25 : BaseCapacity;
+}
+
 int32 UHumanFishingBlueprintLibrary::GetSeaweedBalance(const UObject* WorldContextObject)
 {
     const auto* Inventory = ProgressInventory(WorldContextObject);

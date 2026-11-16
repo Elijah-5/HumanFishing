@@ -100,6 +100,9 @@ public:
     UFUNCTION(BlueprintPure, Category="Human Fishing|Progress", meta=(WorldContext="WorldContextObject"))
     static int32 GetSeaweedBalance(const UObject* WorldContextObject);
 
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Fishing", meta=(WorldContext="WorldContextObject"))
+    static double GetLineCapacity(const UObject* WorldContextObject, double BaseCapacity);
+
     UFUNCTION(BlueprintCallable, Category="Human Fishing|Health")
     static bool UpdateBeachHealth(APawn* Fish, bool bInWater, bool bGrounded);
 

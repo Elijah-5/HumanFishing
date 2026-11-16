@@ -48,6 +48,22 @@ bool FHumanFishingProgress::IsValid() const
     });
 }
 
+FHumanFishingBaitDefinition UHumanFishingCatalog::GetBaitDefinition(EHumanFishingBait Bait) const
+{
+    switch (Bait)
+    {
+    case EHumanFishingBait::Flash:
+        return {NSLOCTEXT("HumanFishingHUD", "FlashBaitName", "Flash Bait"),
+            FlashBaitMesh ? FlashBaitMesh.Get() : DollarBaitMesh.Get(), FlashBaitPortrait.Get(), 2., 4., true};
+    case EHumanFishingBait::HundredDollarBill:
+        return {NSLOCTEXT("HumanFishingHUD", "HundredDollarBillName", "$100 Bill"),
+            HundredDollarBillMesh ? HundredDollarBillMesh.Get() : DollarBaitMesh.Get(), HundredDollarBillPortrait.Get()};
+    default:
+        return {NSLOCTEXT("HumanFishingHUD", "DollarBaitName", "Dollar Bait"),
+            DollarBaitMesh.Get(), DollarBaitPortrait.Get()};
+    }
+}
+
 const FHumanFishingRarityRules& UHumanFishingCatalog::GetRarityRules(EHumanFishingRarity Rarity)
 {
     static const FHumanFishingRarityRules Rules[] = {
@@ -198,14 +214,45 @@ int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)
     return Value;
 }
 
+void UHumanFishingInventory::ToggleBait()
+{
+    switch (SelectedBait)
+    {
+    case EHumanFishingBait::Dollar:
+        SelectedBait = EHumanFishingBait::Flash;
+        break;
+    case EHumanFishingBait::Flash:
+        SelectedBait = HasHundredDollarBill() ? EHumanFishingBait::HundredDollarBill : EHumanFishingBait::Dollar;
+        break;
+    default:
+        SelectedBait = EHumanFishingBait::Dollar;
+        break;
+    }
+}
+
 bool UHumanFishingInventory::BuyMudskipper()
 {
-    if (Progress.bHasMudskipper || Progress.Seaweed < MudskipperCost)
+    return BuyUpgrade(MudskipperCost, Progress.bHasMudskipper);
+}
+
+bool UHumanFishingInventory::BuyBraidedLine()
+{
+    return BuyUpgrade(BraidedLineCost, Progress.bHasBraidedLine);
+}
+
+bool UHumanFishingInventory::BuyHundredDollarBill()
+{
+    return BuyUpgrade(HundredDollarBillCost, Progress.bHasHundredDollarBill);
+}
+
+bool UHumanFishingInventory::BuyUpgrade(int32 Cost, bool& bOwned)
+{
+    if (bOwned || Progress.Seaweed < Cost)
     {
         return false;
     }
-    Progress.Seaweed -= MudskipperCost;
-    Progress.bHasMudskipper = true;
+    Progress.Seaweed -= Cost;
+    bOwned = true;
     NotifyChange();
     return true;
 }

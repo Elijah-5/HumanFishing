@@ -31,6 +31,12 @@ private:
     UFUNCTION()
     void BuyMudskipper();
 
+    UFUNCTION()
+    void BuyBraidedLine();
+
+    UFUNCTION()
+    void BuyHundredDollarBill();
+
     void Refresh();
 
     UPROPERTY(meta=(BindWidget))
@@ -41,6 +47,18 @@ private:
 
     UPROPERTY(meta=(BindWidget))
     TObjectPtr<UTextBlock> MudskipperPrice;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UButton> BraidedLineButton;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UTextBlock> BraidedLinePrice;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UButton> HundredDollarBillButton;
+
+    UPROPERTY(meta=(BindWidget))
+    TObjectPtr<UTextBlock> HundredDollarBillPrice;
 
     UPROPERTY(meta=(BindWidget))
     TObjectPtr<UButton> CloseButton;

@@ -16,8 +16,13 @@ public:
     void ResetPausePage() { ResetPage.ExecuteIfBound(); }
 
 private:
-    FSlateBrush DollarBaitPortrait;
-    FSlateBrush FlashBaitPortrait;
+    struct FBaitReadout
+    {
+        FSlateBrush Portrait;
+        FText Text;
+    };
+
+    TArray<FBaitReadout> BaitReadouts;
     TSharedPtr<SWidget> PausePanel;
     FSimpleDelegate ResetPage;
 };

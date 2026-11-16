@@ -19,13 +19,15 @@ fish respawns in the deep ocean.
 
 ## Bait, casting, and reeling
 
-Press **B** before casting to switch bait. Both types are unlimited and
-available from the start, and the HUD shows which one is selected.
+Press **B** before casting to switch bait. Dollar and Flash Bait are unlimited
+and available from the start. The HUD shows the selected bait.
 
 - **Dollar Bait** attracts the first visitor to fill their interest ring.
 - **Flash Bait** prioritizes higher rarities among visitors who can reach the
   bait. It builds interest twice as fast and gives visitors four extra seconds
   to be hooked after they reach it.
+- **$100 Bill** is reusable bait unlocked at the shop. It attracts every
+  visitor and is the only bait the Businessman accepts.
 
 Swim to the surface and aim toward the beach. **Left-click** to cast, or press
 **E** to preview the trajectory. Steer with the camera, aiming down for a
@@ -66,9 +68,11 @@ Swim up to the Seaweed Exchange stall in the deep ocean press E to trade.
 Redeem the catches in your backpack for seaweed. Then, use the seaweed to
 purchase upgrades. Press E, Esc, Tab, or Close to return to swimming.
 
-Mudskipper costs 25 seaweed and halves damage on land. Buy it once per save
-slot; the shop then marks it as Owned. The other eight squares are reserved
-for future upgrades.
+Each purchase is saved with the current slot and marked Owned.
+
+- Mudskipper costs 25 seaweed and halves damage on land.
+- Braided Line costs 40 seaweed and adds 25% line durability.
+- The $100 Bill costs 30 seaweed and unlocks the only bait the Businessman accepts.
 
 ## Exploration and saves
 
@@ -96,7 +100,7 @@ Rarity affects spawn odds, how long a visitor stays, and seaweed value per
 occupied cell. Footprints are width by height. Interest drain and line wear
 are measured per second.
 
-| Visitor | Rarity | Footprint | Seaweed value | Dollar interest | Interest drain | Line wear |
+| Visitor | Rarity | Footprint | Seaweed value | Bait interest | Interest drain | Line wear |
 | --- | --- | --- | --- | --- | --- | --- |
 | Beach tourist | White | 1×2 | 2 | 1.25× | 8 | 8 |
 | Casual woman | White | 2×1 | 2 | 1.05× | 11 | 6 |

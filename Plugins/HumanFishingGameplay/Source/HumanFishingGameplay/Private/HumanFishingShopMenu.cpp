@@ -22,6 +22,8 @@ void UHumanFishingShopMenu::NativeOnInitialized()
     SellAllButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::RedeemAll);
     CloseButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::CloseShop);
     MudskipperButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::BuyMudskipper);
+    BraidedLineButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::BuyBraidedLine);
+    HundredDollarBillButton->OnClicked.AddDynamic(this, &UHumanFishingShopMenu::BuyHundredDollarBill);
 }
 
 void UHumanFishingShopMenu::NativeConstruct()
@@ -98,6 +100,26 @@ void UHumanFishingShopMenu::BuyMudskipper()
     Refresh();
 }
 
+void UHumanFishingShopMenu::BuyBraidedLine()
+{
+    const auto* UI = GetPlayerUI();
+    if (auto* Inventory = UI ? UI->GetInventory() : nullptr)
+    {
+        Inventory->BuyBraidedLine();
+    }
+    Refresh();
+}
+
+void UHumanFishingShopMenu::BuyHundredDollarBill()
+{
+    const auto* UI = GetPlayerUI();
+    if (auto* Inventory = UI ? UI->GetInventory() : nullptr)
+    {
+        Inventory->BuyHundredDollarBill();
+    }
+    Refresh();
+}
+
 void UHumanFishingShopMenu::Refresh()
 {
     const auto* UI = GetPlayerUI();
@@ -113,11 +135,15 @@ void UHumanFishingShopMenu::Refresh()
         : LOCTEXT("Empty", "Bring catches from your backpack to trade for seaweed."));
     SellAllButton->SetIsEnabled(Payout > 0);
 
-    const bool bOwned = Inventory && Inventory->HasMudskipper();
-    MudskipperButton->SetIsEnabled(!bOwned && Seaweed >= UHumanFishingInventory::MudskipperCost);
-    MudskipperPrice->SetText(bOwned
-        ? LOCTEXT("Owned", "Owned")
-        : FText::Format(LOCTEXT("UpgradePrice", "{0} seaweed"), UHumanFishingInventory::MudskipperCost));
+    const auto UpdateOffer = [Seaweed](UButton* Button, UTextBlock* Price, int32 Cost, bool bOwned)
+    {
+        Button->SetIsEnabled(!bOwned && Seaweed >= Cost);
+        Price->SetText(bOwned ? LOCTEXT("Owned", "Owned") : FText::Format(LOCTEXT("UpgradePrice", "{0} seaweed"), Cost));
+    };
+    UpdateOffer(MudskipperButton, MudskipperPrice, UHumanFishingInventory::MudskipperCost, Inventory && Inventory->HasMudskipper());
+    UpdateOffer(BraidedLineButton, BraidedLinePrice, UHumanFishingInventory::BraidedLineCost, Inventory && Inventory->HasBraidedLine());
+    UpdateOffer(HundredDollarBillButton, HundredDollarBillPrice, UHumanFishingInventory::HundredDollarBillCost,
+        Inventory && Inventory->HasHundredDollarBill());
 }
 
 #undef LOCTEXT_NAMESPACE

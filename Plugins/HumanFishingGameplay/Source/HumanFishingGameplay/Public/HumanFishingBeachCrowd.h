@@ -208,5 +208,5 @@ private:
     int32 ObservedCast = INDEX_NONE;
     int32 RepeatedSide = 0;
     bool bLastSpawnNorth = false;
-    bool bFlashBait = false;
+    EHumanFishingBait CastBait = EHumanFishingBait::Dollar;
 };
