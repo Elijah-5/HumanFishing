@@ -789,6 +789,20 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
                 return Save && Save->HasSaveError() ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
             })
         ]
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Top).Padding(0, 56, 0, 0)
+        [
+            SNew(SBorder).Padding(FMargin(14, 6)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
+            .Visibility_Lambda([Weak]()
+            {
+                return Weak.IsValid() && !Weak->GetAlert().IsEmpty() && !Weak->IsBackpackOpen()
+                    ? EVisibility::HitTestInvisible : EVisibility::Collapsed;
+            })
+            [
+                SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Bold", 18))
+                .ColorAndOpacity(FLinearColor(.96f, .26f, .17f))
+                .Text_Lambda([Weak]() { return Weak.IsValid() ? Weak->GetAlert() : FText::GetEmpty(); })
+            ]
+        ]
         + SOverlay::Slot()
         [ Panel ]
     ];

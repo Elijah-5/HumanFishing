@@ -48,6 +48,9 @@ public:
     bool AdvanceBeachHealth(bool bInWater, bool bGrounded);
     bool TryStoreCatch(FName Type);
     void ShowCaptureToast(FName Type);
+    /** Shows a short warning at the top of the screen, such as a shark alert. */
+    void ShowAlert(const FText& Text, float Seconds = 3.f);
+    FText GetAlert() const;
     void SetBackpackOpen(bool bOpen);
     void UpdateFishingCamera(bool bFishing);
     void ResetFishingCamera();
@@ -86,6 +89,8 @@ private:
     FName ToastType;
     FName NewGuideType;
     double ToastUntil = 0;
+    FText AlertText;
+    double AlertUntil = 0;
 };
 
 UCLASS()
@@ -94,6 +99,7 @@ class HUMANFISHINGGAMEPLAY_API UHumanFishingBlueprintLibrary : public UBlueprint
     GENERATED_BODY()
 
 public:
+    /** Number of catches currently in the backpack. */
     UFUNCTION(BlueprintPure, Category="Human Fishing|Progress", meta=(WorldContext="WorldContextObject"))
     static int32 GetCaptureCount(const UObject* WorldContextObject);
 
