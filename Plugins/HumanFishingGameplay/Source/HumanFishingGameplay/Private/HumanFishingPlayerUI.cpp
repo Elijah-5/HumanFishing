@@ -125,6 +125,17 @@ void UHumanFishingPlayerUI::ShowCaptureToast(FName Type)
     ToastUntil = GetWorld()->GetTimeSeconds() + 2.5;
 }
 
+void UHumanFishingPlayerUI::ShowAlert(const FText& Text, float Seconds)
+{
+    AlertText = Text;
+    AlertUntil = GetWorld()->GetTimeSeconds() + Seconds;
+}
+
+FText UHumanFishingPlayerUI::GetAlert() const
+{
+    return GetWorld() && GetWorld()->GetTimeSeconds() < AlertUntil ? AlertText : FText::GetEmpty();
+}
+
 FName UHumanFishingPlayerUI::GetToastType() const
 {
     return GetWorld() && GetWorld()->GetTimeSeconds() < ToastUntil ? ToastType : NAME_None;
@@ -177,7 +188,8 @@ UHumanFishingInventory* ProgressInventory(const UObject* WorldContextObject)
 int32 UHumanFishingBlueprintLibrary::GetCaptureCount(const UObject* WorldContextObject)
 {
     const auto* Inventory = ProgressInventory(WorldContextObject);
-    return Inventory ? Inventory->GetLifetimeCatchCount() : 0;
+    // Catches currently held. Rarity unlocks use the lifetime count instead.
+    return Inventory ? Inventory->GetCatches().Num() : 0;
 }
 
 double UHumanFishingBlueprintLibrary::GetLineCapacity(const UObject* WorldContextObject, double BaseCapacity)

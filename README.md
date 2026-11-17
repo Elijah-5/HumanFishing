@@ -49,7 +49,8 @@ capture tips for individual visitors.
 ## Backpack and field guide
 
 Press **Tab** to pause and open the 4×4 backpack. A successful catch fills the
-first space large enough for its footprint and adds to the capture counter.
+first space large enough for its footprint and adds to the capture counter,
+which shows how many catches the backpack holds.
 If the backpack has no room, the visitor returns to patrol.
 
 Drag catches to rearrange them. Select a catch to see its rarity, size, and
@@ -73,6 +74,24 @@ Each purchase is saved with the current slot and marked Owned.
 - Mudskipper costs 25 seaweed and halves damage on land.
 - Braided Line costs 40 seaweed and adds 25% line durability.
 - The $100 Bill costs 30 seaweed and unlocks the only bait the Businessman accepts.
+
+## Sharks
+
+Sharks patrol the deep ocean. If the fish swims within a shark's detection
+range, the shark gives chase and an alert appears at the top of the screen.
+On contact, the shark steals everything in the backpack. Lifetime captures,
+Field Guide entries, and seaweed are kept. After a theft, the shark ignores
+the fish for a few seconds. Swim far enough away and the shark gives up and
+returns to its patrol. Sharks leave the fish alone while the shop or backpack
+is open.
+
+To add a shark, place `HumanFishingShark` (C++ class, under
+`HumanFishingGameplay`) or a Blueprint subclass of it in `L_DeepOcean`. Its
+placed location is the center of its patrol area. Select it to see its
+patrol (green), detection (orange), and give-up (blue) ranges. Tune speeds and
+ranges under **Shark** in the Details panel. The body is a placeholder made
+from basic shapes; a Blueprint subclass can swap in the final mesh and use the
+`OnSharkStateChanged` and `OnCatchesStolen` events for animation and sound.
 
 ## Exploration and saves
 
@@ -136,6 +155,7 @@ Open the console with the backtick key, below **Esc** on a US keyboard.
 | `hf.dev list` | List the visitor IDs in the current catalog. |
 | `hf.dev spawn <type>` | Spawn a visitor of the given catalog type on the beach near the fish. |
 | `hf.dev off` | Restore progress and the area from before the test. |
+| `hf.shark [distance]` | Spawn a test shark ahead of the fish (default 2000 units). Works in any level. |
 
 Manual spawns bypass rarity, unlocks, and the crowd cap. They use the normal
 visitor AI and can be caught. Testing can continue across both beaches.

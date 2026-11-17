@@ -202,6 +202,17 @@ int32 UHumanFishingInventory::GetRedemptionValue(const UHumanFishingCatalog* Cat
     return Total;
 }
 
+int32 UHumanFishingInventory::StealCatches()
+{
+    const int32 Count = Progress.Catches.Num();
+    if (Count > 0)
+    {
+        Progress.Catches.Reset();
+        NotifyChange();
+    }
+    return Count;
+}
+
 int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)
 {
     const int32 Value = GetRedemptionValue(Catalog);
