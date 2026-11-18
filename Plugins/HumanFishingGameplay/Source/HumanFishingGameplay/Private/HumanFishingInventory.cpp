@@ -202,15 +202,38 @@ int32 UHumanFishingInventory::GetRedemptionValue(const UHumanFishingCatalog* Cat
     return Total;
 }
 
-int32 UHumanFishingInventory::StealCatches()
+float UHumanFishingInventory::GetLoadFraction() const
 {
-    const int32 Count = Progress.Catches.Num();
-    if (Count > 0)
+    int32 Used = 0;
+    for (const FHumanFishingCatch& Catch : Progress.Catches)
     {
-        Progress.Catches.Reset();
-        NotifyChange();
+        Used += Catch.Size.X * Catch.Size.Y;
     }
-    return Count;
+    return FMath::Clamp(static_cast<float>(Used) / (Columns * Rows), 0.f, 1.f);
+}
+
+bool UHumanFishingInventory::StealMostValuableCatch(const UHumanFishingCatalog* Catalog, FHumanFishingCatch& OutStolen)
+{
+    int32 Best = INDEX_NONE;
+    int32 BestScore = -1;
+    for (int32 Index = 0; Index < Progress.Catches.Num(); ++Index)
+    {
+        const FHumanFishingCatch& Catch = Progress.Catches[Index];
+        const int32 Score = Catalog ? Catalog->GetCatchSeaweedValue(Catch) : Catch.Size.X * Catch.Size.Y;
+        if (Score > BestScore)
+        {
+            Best = Index;
+            BestScore = Score;
+        }
+    }
+    if (Best == INDEX_NONE)
+    {
+        return false;
+    }
+    OutStolen = Progress.Catches[Best];
+    Progress.Catches.RemoveAt(Best);
+    NotifyChange();
+    return true;
 }
 
 int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)

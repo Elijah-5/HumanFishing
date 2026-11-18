@@ -320,9 +320,15 @@ public:
     UFUNCTION(BlueprintCallable, Category="Human Fishing|Progress")
     void SetSeaweed(int32 Amount);
 
-    /** Empties the backpack without paying anything. Lifetime captures and the Field Guide are kept. */
-    UFUNCTION(BlueprintCallable, Category="Human Fishing|Backpack")
-    int32 StealCatches();
+    /** Share of backpack cells in use, from 0 (empty) to 1 (full). */
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
+    float GetLoadFraction() const;
+
+    /**
+     * Removes the catch worth the most seaweed (the largest one without a catalog) without paying anything.
+     * Lifetime captures and the Field Guide are kept. Returns false for an empty backpack.
+     */
+    bool StealMostValuableCatch(const UHumanFishingCatalog* Catalog, FHumanFishingCatch& OutStolen);
 
     int32 GetRedemptionValue(const UHumanFishingCatalog* Catalog) const;
     int32 RedeemCatches(const UHumanFishingCatalog* Catalog);

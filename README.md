@@ -79,11 +79,15 @@ Each purchase is saved with the current slot and marked Owned.
 
 Sharks patrol the deep ocean. If the fish swims within a shark's detection
 range, the shark gives chase and an alert appears at the top of the screen.
-On contact, the shark steals everything in the backpack. Lifetime captures,
-Field Guide entries, and seaweed are kept. After a theft, the shark ignores
-the fish for a few seconds. Swim far enough away and the shark gives up and
-returns to its patrol. Sharks leave the fish alone while the shop or backpack
-is open.
+A fuller backpack draws more attention: with every backpack cell in use,
+sharks notice the fish from 50% farther away and chase 25% faster.
+
+Each bite costs 25 HP and steals the most valuable catch in the backpack.
+Lifetime captures, Field Guide entries, and seaweed are kept. After a bite,
+the shark ignores the fish for a few seconds and the deep ocean stops healing
+the fish for 4 seconds. At zero HP, the fish returns to where it entered the
+deep ocean. Swim far enough away and the shark gives up and returns to its
+patrol. Sharks leave the fish alone while the shop or backpack is open.
 
 To add a shark, place `HumanFishingShark` (C++ class, under
 `HumanFishingGameplay`) or a Blueprint subclass of it in `L_DeepOcean`. Its
@@ -156,6 +160,10 @@ Open the console with the backtick key, below **Esc** on a US keyboard.
 | `hf.dev spawn <type>` | Spawn a visitor of the given catalog type on the beach near the fish. |
 | `hf.dev off` | Restore progress and the area from before the test. |
 | `hf.shark [distance]` | Spawn a test shark ahead of the fish (default 2000 units). Works in any level. |
+| `hf.give <type> [count]` | Add catches of a visitor type to the backpack. Run without arguments to list types. Works in any level. |
+| `hf.seaweed <amount>` | Set the seaweed balance. Works in any level. |
+
+`hf.give` and `hf.seaweed` save to the current slot unless `hf.dev on` is active.
 
 Manual spawns bypass rarity, unlocks, and the crowd cap. They use the normal
 visitor AI and can be caught. Testing can continue across both beaches.

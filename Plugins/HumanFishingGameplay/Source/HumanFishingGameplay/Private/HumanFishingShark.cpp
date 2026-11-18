@@ -138,11 +138,16 @@ void AHumanFishingShark::BeginPlay()
     PickPatrolPoint(Home);
 }
 
-FHumanFishingSharkRanges AHumanFishingShark::GetRanges() const
+float AHumanFishingShark::ScaleForLoad(float Base, float Load, float FullLoadBonus)
+{
+    return Base * (1.f + FMath::Clamp(Load, 0.f, 1.f) * FMath::Max(FullLoadBonus, 0.f));
+}
+
+FHumanFishingSharkRanges AHumanFishingShark::GetRanges(float Load) const
 {
     FHumanFishingSharkRanges Ranges;
-    Ranges.DetectionRadius = DetectionRadius;
-    Ranges.LoseRadius = FMath::Max(LoseRadius, DetectionRadius);
+    Ranges.DetectionRadius = ScaleForLoad(DetectionRadius, Load, FullLoadDetectionBonus);
+    Ranges.LoseRadius = ScaleForLoad(FMath::Max(LoseRadius, DetectionRadius), Load, FullLoadDetectionBonus);
     Ranges.ContactRadius = ContactRadius;
     return Ranges;
 }
@@ -184,8 +189,12 @@ void AHumanFishingShark::Tick(float DeltaSeconds)
         : TNumericLimits<float>::Max();
     Senses.bCoolingDown = CooldownLeft > 0.f;
 
+    // A heavier backpack is easier to notice and worth chasing harder.
+    const UHumanFishingInventory* Inventory = UI ? UI->GetInventory() : nullptr;
+    const float Load = Inventory ? Inventory->GetLoadFraction() : 0.f;
+
     bool bSteal = false;
-    const EHumanFishingSharkState Next = ChooseState(State, Senses, GetRanges(), bSteal);
+    const EHumanFishingSharkState Next = ChooseState(State, Senses, GetRanges(Load), bSteal);
     if (bSteal)
     {
         StealFrom(UI);
@@ -197,7 +206,8 @@ void AHumanFishingShark::Tick(float DeltaSeconds)
 
     if (State == EHumanFishingSharkState::Chase && Target)
     {
-        SwimToward(ClampToSwimArea(Target->GetActorLocation()), ChaseSpeed, ChaseTurnRate, DeltaSeconds);
+        SwimToward(ClampToSwimArea(Target->GetActorLocation()),
+            ScaleForLoad(ChaseSpeed, Load, FullLoadChaseSpeedBonus), ChaseTurnRate, DeltaSeconds);
         return;
     }
 
@@ -233,20 +243,38 @@ void AHumanFishingShark::SetState(EHumanFishingSharkState NewState, UHumanFishin
 
 void AHumanFishingShark::StealFrom(UHumanFishingPlayerUI* UI)
 {
-    UHumanFishingInventory* Inventory = UI ? UI->GetInventory() : nullptr;
-    const int32 Count = Inventory ? Inventory->StealCatches() : 0;
-    if (UI)
-    {
-        UI->ShowAlert(Count > 0
-            ? FText::Format(LOCTEXT("Stole", "The shark stole {0} {0}|plural(one=catch,other=catches)!"), Count)
-            : LOCTEXT("NothingToSteal", "The shark found nothing to steal."), 3.5f);
-    }
-
-    CooldownLeft = StealCooldown;
+    // Swim away from where the bite happened, before a knockout moves the fish.
     const AActor* Fish = UI ? UI->GetOwner() : nullptr;
     PickPatrolPoint(Fish ? Fish->GetActorLocation() : GetActorLocation());
+    CooldownLeft = StealCooldown;
     SetState(EHumanFishingSharkState::Retreat, nullptr);
-    OnCatchesStolen(Count);
+
+    // Each bite takes the most valuable catch, so escaping early saves the rest.
+    UHumanFishingInventory* Inventory = UI ? UI->GetInventory() : nullptr;
+    const UHumanFishingCatalog* Catalog = UI ? UI->GetCatalog() : nullptr;
+    FHumanFishingCatch Stolen;
+    const bool bStole = Inventory && Inventory->StealMostValuableCatch(Catalog, Stolen);
+    const bool bKnockedOut = UI && UI->ApplyAttackDamage(BiteDamage, HealingDelayAfterBite);
+
+    if (UI)
+    {
+        const FHumanFishingCatchType* Profile = bStole && Catalog ? Catalog->Types.Find(Stolen.Type) : nullptr;
+        const FText Name = Profile ? Profile->DisplayName : FText::FromName(Stolen.Type);
+        FText Message;
+        if (bStole)
+        {
+            Message = bKnockedOut
+                ? FText::Format(LOCTEXT("StoleKnockedOut", "The shark stole your {0} and knocked you out!"), Name)
+                : FText::Format(LOCTEXT("Stole", "The shark bit you and stole your {0}!"), Name);
+        }
+        else
+        {
+            Message = bKnockedOut ? LOCTEXT("KnockedOut", "The shark knocked you out!")
+                : LOCTEXT("Bit", "The shark bit you!");
+        }
+        UI->ShowAlert(Message, 3.5f);
+    }
+    OnCatchesStolen(bStole ? 1 : 0);
 }
 
 void AHumanFishingShark::PickPatrolPoint(const FVector& AvoidLocation)
