@@ -46,6 +46,11 @@ public:
     float OceanHealingPerSecond = 20.f;
 
     bool AdvanceBeachHealth(bool bInWater, bool bGrounded);
+    /**
+     * Applies damage from an attack and pauses deep-ocean healing for HealingDelay seconds.
+     * At zero HP in the deep ocean, the fish returns to the level's spawn point. Returns true in that case.
+     */
+    bool ApplyAttackDamage(float Damage, float HealingDelay);
     bool TryStoreCatch(FName Type);
     void ShowCaptureToast(FName Type);
     /** Shows a short warning at the top of the screen, such as a shark alert. */
@@ -91,6 +96,7 @@ private:
     double ToastUntil = 0;
     FText AlertText;
     double AlertUntil = 0;
+    double HealingPausedUntil = 0;
 };
 
 UCLASS()

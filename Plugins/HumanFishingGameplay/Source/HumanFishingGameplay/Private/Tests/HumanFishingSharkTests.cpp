@@ -64,20 +64,52 @@ bool FHumanFishingSharkTheft::RunTest(const FString& Parameters)
 {
     auto* Game = NewObject<UGameInstance>();
     auto* Inventory = NewObject<UHumanFishingInventory>(Game);
+    auto* Catalog = NewObject<UHumanFishingCatalog>();
+    Catalog->Types.Add(TEXT("Tourist")).Rarity = EHumanFishingRarity::White;
+    Catalog->Types.Add(TEXT("Farmer")).Rarity = EHumanFishingRarity::Green;
+    Catalog->Types.Add(TEXT("Photographer")).Rarity = EHumanFishingRarity::Gold;
+    FHumanFishingCatch Stolen;
 
-    TestEqual(TEXT("Empty backpack loses nothing"), Inventory->StealCatches(), 0);
+    TestFalse(TEXT("Empty backpack loses nothing"), Inventory->StealMostValuableCatch(Catalog, Stolen));
+    TestEqual(TEXT("Empty backpack has no load"), Inventory->GetLoadFraction(), 0.f);
     Inventory->SetSeaweed(30);
-    TestTrue(TEXT("Store first catch"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
-    TestTrue(TEXT("Store second catch"), Inventory->TryAddCatch(TEXT("Farmer"), FIntPoint(2, 2)));
+    TestTrue(TEXT("Store tourist"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
+    TestTrue(TEXT("Store photographer"), Inventory->TryAddCatch(TEXT("Photographer"), FIntPoint(3, 2)));
+    TestTrue(TEXT("Store farmer"), Inventory->TryAddCatch(TEXT("Farmer"), FIntPoint(2, 2)));
+    TestEqual(TEXT("Load counts occupied cells"), Inventory->GetLoadFraction(), 12.f / 16.f);
 
-    TestEqual(TEXT("Steals every catch"), Inventory->StealCatches(), 2);
-    TestEqual(TEXT("Backpack emptied"), Inventory->GetCatches().Num(), 0);
+    TestTrue(TEXT("First bite steals"), Inventory->StealMostValuableCatch(Catalog, Stolen));
+    TestEqual(TEXT("First bite takes the most valuable catch"), Stolen.Type, FName(TEXT("Photographer")));
+    TestEqual(TEXT("Other catches kept"), Inventory->GetCatches().Num(), 2);
+    TestEqual(TEXT("Load drops after a bite"), Inventory->GetLoadFraction(), 6.f / 16.f);
+    TestTrue(TEXT("Second bite steals"), Inventory->StealMostValuableCatch(Catalog, Stolen));
+    TestEqual(TEXT("Second bite takes the next most valuable"), Stolen.Type, FName(TEXT("Farmer")));
+    TestTrue(TEXT("Third bite steals"), Inventory->StealMostValuableCatch(Catalog, Stolen));
+    TestEqual(TEXT("Third bite takes the last catch"), Stolen.Type, FName(TEXT("Tourist")));
+    TestFalse(TEXT("Nothing left to steal"), Inventory->StealMostValuableCatch(Catalog, Stolen));
+
     TestEqual(TEXT("Seaweed untouched"), Inventory->GetSeaweed(), 30);
-    TestEqual(TEXT("Lifetime captures preserved"), Inventory->GetLifetimeCatchCount(), 2);
-    TestTrue(TEXT("Field Guide preserved"), Inventory->HasCaughtType(TEXT("Farmer")));
-    TestEqual(TEXT("Second theft finds nothing"), Inventory->StealCatches(), 0);
-    TestTrue(TEXT("Backpack usable after theft"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
+    TestEqual(TEXT("Lifetime captures preserved"), Inventory->GetLifetimeCatchCount(), 3);
+    TestTrue(TEXT("Field Guide preserved"), Inventory->HasCaughtType(TEXT("Photographer")));
+
+    TestTrue(TEXT("Store small catch"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
+    TestTrue(TEXT("Store large catch"), Inventory->TryAddCatch(TEXT("Farmer"), FIntPoint(2, 2)));
+    TestTrue(TEXT("Steal without a catalog"), Inventory->StealMostValuableCatch(nullptr, Stolen));
+    TestEqual(TEXT("Without a catalog the largest catch goes"), Stolen.Type, FName(TEXT("Farmer")));
     TestTrue(TEXT("Progress remains valid"), Inventory->GetProgress().IsValid());
+    return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingSharkLoad,
+    "HumanFishing.Shark.Load", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FHumanFishingSharkLoad::RunTest(const FString& Parameters)
+{
+    TestEqual(TEXT("Empty backpack keeps the base value"), AHumanFishingShark::ScaleForLoad(1000.f, 0.f, .5f), 1000.f);
+    TestEqual(TEXT("Half load gives half the bonus"), AHumanFishingShark::ScaleForLoad(1000.f, .5f, .5f), 1250.f);
+    TestEqual(TEXT("Full load gives the full bonus"), AHumanFishingShark::ScaleForLoad(1000.f, 1.f, .5f), 1500.f);
+    TestEqual(TEXT("Load above full is clamped"), AHumanFishingShark::ScaleForLoad(1000.f, 3.f, .5f), 1500.f);
+    TestEqual(TEXT("Negative bonus is ignored"), AHumanFishingShark::ScaleForLoad(1000.f, 1.f, -1.f), 1000.f);
     return true;
 }
 

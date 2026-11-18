@@ -3,7 +3,9 @@
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/HUD.h"
+#include "GameFramework/PawnMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
@@ -69,7 +71,7 @@ void UHumanFishingPlayerUI::TickComponent(float DeltaTime, ELevelTick TickType, 
     }
 
     EnsureOverlay(Controller);
-    if (bDeepOcean)
+    if (bDeepOcean && GetWorld()->GetTimeSeconds() >= HealingPausedUntil)
     {
         if (UHumanFishingInventory* Inventory = GetInventory())
         {
@@ -100,6 +102,38 @@ bool UHumanFishingPlayerUI::AdvanceBeachHealth(bool bInWater, bool bGrounded)
     Inventory->ChangeHealth(-BeachDamagePerSecond * DamageMultiplier * GetWorld()->GetDeltaSeconds());
     bEvacuating = Inventory->GetHealth() <= 0.f;
     return bEvacuating;
+}
+
+bool UHumanFishingPlayerUI::ApplyAttackDamage(float Damage, float HealingDelay)
+{
+    UHumanFishingInventory* Inventory = GetInventory();
+    if (!Inventory || Damage <= 0.f)
+    {
+        return false;
+    }
+    Inventory->ChangeHealth(-Damage);
+    HealingPausedUntil = GetWorld()->GetTimeSeconds() + HealingDelay;
+    if (!bDeepOcean || Inventory->GetHealth() > 0.f)
+    {
+        return false;
+    }
+
+    // Knocked out at sea: return to where the fish entered the deep ocean.
+    APawn* Fish = Cast<APawn>(GetOwner());
+    AController* Controller = Fish ? Fish->GetController() : nullptr;
+    AGameModeBase* Mode = GetWorld()->GetAuthGameMode();
+    AActor* Start = Mode && Controller ? Mode->FindPlayerStart(Controller) : nullptr;
+    if (!Start)
+    {
+        return false;
+    }
+    if (UPawnMovementComponent* Movement = Fish->GetMovementComponent())
+    {
+        Movement->StopMovementImmediately();
+    }
+    Fish->TeleportTo(Start->GetActorLocation(), Start->GetActorRotation());
+    Controller->SetControlRotation(Start->GetActorRotation());
+    return true;
 }
 
 bool UHumanFishingPlayerUI::TryStoreCatch(FName Type)

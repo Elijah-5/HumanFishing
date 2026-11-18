@@ -56,6 +56,9 @@ public:
     static EHumanFishingSharkState ChooseState(EHumanFishingSharkState Current, const FHumanFishingSharkSenses& Senses,
         const FHumanFishingSharkRanges& Ranges, bool& bOutSteal);
 
+    /** Base * (1 + Load * FullLoadBonus), with Load clamped to 0..1. */
+    static float ScaleForLoad(float Base, float Load, float FullLoadBonus);
+
     UFUNCTION(BlueprintPure, Category="Shark")
     EHumanFishingSharkState GetState() const { return State; }
 
@@ -68,7 +71,7 @@ public:
     float VerticalRange = 600.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Patrol", meta=(ClampMin="1"))
-    float PatrolSpeed = 210.f;
+    float PatrolSpeed = 157.5f;
 
     /** Degrees per second. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Patrol", meta=(ClampMin="1"))
@@ -83,7 +86,7 @@ public:
     float LoseRadius = 1800.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Chase", meta=(ClampMin="1"))
-    float ChaseSpeed = 420.f;
+    float ChaseSpeed = 315.f;
 
     /** Degrees per second. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Chase", meta=(ClampMin="1"))
@@ -97,15 +100,34 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Chase")
     bool bOnlyChaseWhenCarrying = false;
 
-    /** Seconds the shark ignores the fish after a theft. */
+    /**
+     * Extra detection and give-up range with a full backpack, as a fraction of the base ranges.
+     * The bonus grows with the share of backpack cells in use. 0.5 means 50% farther when full.
+     */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Carried Catch", meta=(ClampMin="0"))
+    float FullLoadDetectionBonus = .5f;
+
+    /** Extra chase speed with a full backpack, as a fraction of ChaseSpeed. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Carried Catch", meta=(ClampMin="0"))
+    float FullLoadChaseSpeedBonus = .25f;
+
+    /** Seconds the shark ignores the fish after a bite. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Theft", meta=(ClampMin="0"))
     float StealCooldown = 6.f;
+
+    /** Health the fish loses per bite. The fish has 100 HP. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Theft", meta=(ClampMin="0"))
+    float BiteDamage = 25.f;
+
+    /** Seconds after a bite before the deep ocean heals the fish again. */
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Theft", meta=(ClampMin="0"))
+    float HealingDelayAfterBite = 4.f;
 
     /** Called when the state changes, for sounds, animation, or effects in a Blueprint subclass. */
     UFUNCTION(BlueprintImplementableEvent, Category="Shark")
     void OnSharkStateChanged(EHumanFishingSharkState NewState);
 
-    /** Called after contact. Count is the number of catches taken, which may be zero. */
+    /** Called after each bite. Count is the number of catches taken: 1, or 0 for an empty backpack. */
     UFUNCTION(BlueprintImplementableEvent, Category="Shark")
     void OnCatchesStolen(int32 Count);
 
@@ -128,7 +150,7 @@ protected:
     TObjectPtr<UStaticMeshComponent> Tail;
 
 private:
-    FHumanFishingSharkRanges GetRanges() const;
+    FHumanFishingSharkRanges GetRanges(float Load) const;
     APawn* FindTarget(UHumanFishingPlayerUI*& OutUI) const;
     void SetState(EHumanFishingSharkState NewState, UHumanFishingPlayerUI* UI);
     void StealFrom(UHumanFishingPlayerUI* UI);
