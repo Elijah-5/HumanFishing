@@ -9,7 +9,25 @@ class AAIController;
 class AHUD;
 class FAutoConsoleCommandWithWorldArgsAndOutputDevice;
 class UAnimMontage;
+class UHumanFishingBeachLayoutComponent;
 class UStaticMeshComponent;
+
+#if WITH_EDITOR
+/** Beach areas the visitor AI derives from the Beach bounds, drawn by the editor layout preview. */
+struct FHumanFishingBeachLayout
+{
+    /** Where FindInlandPoint picks walking destinations, before NavMesh projection. */
+    FBox2D Roaming = FBox2D(ForceInit);
+
+    /** X range of the SidePoint candidates where visitors arrive and leave. */
+    double EntryMinX = 0.;
+    double EntryMaxX = 0.;
+
+    /** Y of the SidePoint candidates on the Max.Y (north) and Min.Y (south) sides. */
+    double NorthY = 0.;
+    double SouthY = 0.;
+};
+#endif
 
 UCLASS()
 class HUMANFISHINGGAMEPLAY_API AHumanFishingBeachCrowd : public AActor
@@ -39,6 +57,26 @@ public:
 
     UPROPERTY(EditInstanceOnly, Category="Beach")
     TMap<EHumanFishingRarity, int32> SpawnWeightOverrides;
+
+#if WITH_EDITORONLY_DATA
+    /**
+     * Draws the Beach bounds (cyan), the walking destination range (green), and the candidate entry and exit
+     * lines (orange) in the editor viewport. Never drawn in game.
+     */
+    UPROPERTY(EditAnywhere, Category="Beach")
+    bool bShowBeachLayout = true;
+#endif
+
+#if WITH_EDITOR
+    static FHumanFishingBeachLayout GetBeachLayout(const FBox& Bounds);
+#endif
+
+    /** Spawn a registered visitor on the beach NavMesh near a restroom exit.
+     * Returns nullptr when the crowd is full or the exit has no safe spawn location.
+     * ExitLocation is a world position; its Z is projected to the beach floor.
+     */
+    UFUNCTION(BlueprintCallable, Category="Beach|Restroom")
+    ACharacter* SpawnRestroomVisitor(FVector ExitLocation, FRotator ExitRotation);
 
     UFUNCTION(BlueprintCallable, Category="Beach")
     void ToggleBait();
@@ -209,4 +247,9 @@ private:
     int32 RepeatedSide = 0;
     bool bLastSpawnNorth = false;
     EHumanFishingBait CastBait = EHumanFishingBait::Dollar;
+
+#if WITH_EDITORONLY_DATA
+    UPROPERTY()
+    TObjectPtr<UHumanFishingBeachLayoutComponent> BeachLayout;
+#endif
 };
