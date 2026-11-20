@@ -13,6 +13,7 @@
 #include "GameFramework/HUD.h"
 #include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
+#include "HumanFishingBeachLayout.h"
 #include "HumanFishingInventory.h"
 #include "HumanFishingSave.h"
 #include "HumanFishingVisitorAnimation.h"
@@ -124,6 +125,10 @@ AHumanFishingBeachCrowd::AHumanFishingBeachCrowd()
 {
     PrimaryActorTick.bCanEverTick = true;
     SetActorEnableCollision(false);
+
+#if WITH_EDITORONLY_DATA
+    BeachLayout = CreateEditorOnlyDefaultSubobject<UHumanFishingBeachLayoutComponent>(TEXT("BeachLayout"));
+#endif
 }
 
 #if !UE_BUILD_SHIPPING
@@ -1180,3 +1185,19 @@ const FHumanFishingCatchType* AHumanFishingBeachCrowd::FindProfile(const FVisito
 {
     return Catalog ? Catalog->Types.Find(Visitor ? Visitor->Type : Tourist) : nullptr;
 }
+
+#if WITH_EDITOR
+FHumanFishingBeachLayout AHumanFishingBeachCrowd::GetBeachLayout(const FBox& Bounds)
+{
+    // Mirrors FindInlandPoint and SidePoint. Update these together when retuning visitor routes.
+    const FVector Size = Bounds.GetSize();
+    FHumanFishingBeachLayout Layout;
+    Layout.Roaming = FBox2D(FVector2D(Bounds.Min.X + Size.X * .12, Bounds.Min.Y + Size.Y * .22),
+        FVector2D(Bounds.Min.X + Size.X * .45, Bounds.Max.Y - Size.Y * .22));
+    Layout.EntryMinX = Bounds.Min.X + EdgeInset + 45.;
+    Layout.EntryMaxX = FMath::Max(Layout.EntryMinX, Bounds.Min.X + Size.X * .61);
+    Layout.NorthY = Bounds.Max.Y - EdgeInset;
+    Layout.SouthY = Bounds.Min.Y + EdgeInset;
+    return Layout;
+}
+#endif
