@@ -1,0 +1,70 @@
+[
+  {
+    "name": "seaweed",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Currency icon: a compact bundle of three visibly wavy green kelp fronds, tied at the bottom with a tiny pale-gold cord. The leaves must read as seaweed, not a tree or a coin. Bright seafoam green against transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "cove_key",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. A single brass-gold key with a round seafoam inset in its bow and a subtle wave cutout, large simple teeth, slightly diagonal from lower left to upper right. Readable recognizable key silhouette. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "purchase",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Purchase/restock action icon: a sturdy little teal shopping satchel with a cream handle and a bold gold plus badge in the lower right. Simple uncluttered silhouette. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "sell_one",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Sell selected catch action icon: a pale sand human bust portrait token moving toward a small seaweed bundle, connected by one bold gold right arrow. Three large simple shapes, no coin or dollar symbol. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "sell_all",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Sell all catches action icon: a teal basket containing two simple sand-colored human bust silhouettes, with a bold gold outward arrow at the right. A compact recognizable basket silhouette, no tiny decorative details. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "upgrade",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Permanent upgrade icon: a single bold upward gold arrow on a small teal shield with a cream rim, sturdy playful nautical game style. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "locked",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Locked exploration icon: a small simple brass padlock with seafoam teal body and pale gold shackle, bold clean keyhole, no extra symbols. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "backpack",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Backpack tab icon: a compact teal canvas backpack with sand-colored straps, a broad brass clasp, one simple front pocket, front-facing. Transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "slot",
+    "prompt": "Use case: stylized-concept. Production game UI asset for Human Fishing, a low-poly underwater trading game. Cohesive art style: clean charming hand-painted flat shapes with a few broad polygonal facets, very crisp silhouette and thick readable contour, deep navy #102633, seafoam teal #60BFA8, light sand #EFE3BC, restrained brass gold #DBB26E. Front-facing orthographic UI view, no perspective scene, no lettering, no watermark, no cast shadow outside the silhouette. Clear at 24\u201348 pixels. Exactly one centered asset filling 78% of the canvas, generous transparent padding. Production 2D game inventory empty-slot tile, square. Dark navy-teal recessed center occupying 86% of area, thin beveled seafoam stone rim, very restrained hand-painted wear only at corners. Extremely clean and unobtrusive so a character portrait can sit on top. No objects, no grid, no text. Transparent pixels only outside the subtly rounded square silhouette. Seamless-looking straight rim on all four sides, orthographic frontal view.",
+    "transparent": true
+  },
+  {
+    "name": "shop_panel",
+    "prompt": "Use case: stylized-concept. Production game UI panel BACKGROUND ONLY, landscape aspect ratio 3:2, front-facing flat 2D. Human Fishing underwater trading game palette deep navy #102633, muted teal #244A50, sand #EFE3BC and restrained brass gold. A subtle nautical seaweed-market panel: very dark nearly uniform center covering 88% of image, thin clean muted teal and brass frame, tiny low-poly coral and seaweed motifs restricted to the outermost bottom corners. Calm high readability, no light rays, no shiny highlights, no objects in the center. No words, no letters, no UI controls, no mockup, no labels. Slightly rounded outer corners with transparent area outside; opaque panel interior. This asset will sit behind real interactive UI.",
+    "transparent": true
+  },
+  {
+    "name": "jellyshock",
+    "prompt": "Use case: stylized-concept. Production UI inventory icon for Human Fishing, a low-poly underwater game. Crisp hand-painted flat shapes, broad polygonal facets, strong readable silhouette, thick dark navy contour, seafoam teal #60BFA8, pale sand #EFE3BC, restrained brass #DBB26E. Orthographic front three-quarter icon, no scene, no lettering, no digits, no watermark. One centered asset filling 80% of square canvas, truly transparent background. Readable at 24\u201364 pixels. A small transparent round water capsule containing ONE luminous turquoise jellyfish with a clear bell and three short curled tentacles, sealed by a tiny sand-colored cap. A small sharp electric zigzag within the jellyfish bell communicates a stunning charge. Organic ocean trinket, not a weapon or padlock. Distinct round silhouette. No external glow bleeding across the transparent background.",
+    "transparent": true
+  },
+  {
+    "name": "tidal_fins",
+    "prompt": "Use case: stylized-concept. Production UI inventory icon for Human Fishing, a low-poly underwater game. Crisp hand-painted flat shapes, broad polygonal facets, strong readable silhouette, thick dark navy contour, seafoam teal #60BFA8, pale sand #EFE3BC, restrained brass #DBB26E. Orthographic front three-quarter icon, no scene, no lettering, no digits, no watermark. One centered asset filling 80% of square canvas, truly transparent background. Readable at 24\u201364 pixels. A single beautiful streamlined fish-tail fin upgrade: two clearly split seafoam teal tail lobes edged in pale sand, a compact brass cuff at the narrow attachment, three broad dark navy segmented ridges. A small integrated curling water motif carved into the fin conveys swimming power. Clearly a tail fin, not a leaf, flipper shoe, arrow, or pair of boots. Wide fan-shaped silhouette, minimal detail. No external glow.",
+    "transparent": true
+  },
+  {
+    "name": "violet_jellyshock",
+    "file": "T_UI_VioletJellyshock.png",
+    "prompt": "Use case: stylized-concept. Asset type: transparent game inventory item icon for Human Fishing. Input image 1 is a STYLE AND COMPOSITION REFERENCE for a new sibling item, not an asset to overwrite. Create ONE premium VIOLET JELLYSHOCK CAPSULE icon matching the reference's low-poly faceted illustrated 3D style, strong navy contours and clean readable game silhouette. Keep the same round glass bottle silhouette, gold collar and cork, centered square framing and transparent padding. Inside the bottle, show a glowing purple jellyfish with a violet translucent umbrella bell, exactly three curled lavender tentacles, a bright pearl-white lightning core with two small violet electric branches. Purple and magenta replace the teal water/jellyfish palette; retain warm brass accents. The icon must remain legible at 32 px. Genuine transparent background, no text, no prices, no UI frame, no checkerboard, no drop-shadow outside the bottle, no extra objects. Preserve proportions; do not stretch the bottle.",
+    "transparent": true,
+    "reference": "T_UI_Jellyshock.png",
+    "tool": "built-in image_gen"
+  }
+]

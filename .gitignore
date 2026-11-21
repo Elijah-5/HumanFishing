@@ -45,6 +45,8 @@
 # Precompiled Assets
 SourceArt/**/*.png
 SourceArt/**/*.tga
+!SourceArt/Ocean/Kenney/Textures/*.png
+!SourceArt/UI/*.png
 
 # Binary Files
 Binaries/*
@@ -76,3 +78,6 @@ DerivedDataCache/*
 
 # macOS Finder metadata
 .DS_Store
+__pycache__/
+*.pyc
+*.blend1

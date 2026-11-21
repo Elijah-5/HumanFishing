@@ -11,12 +11,13 @@ class UStaticMesh;
 class UAnimSequence;
 class UAnimMontage;
 
+UENUM(BlueprintType)
 enum class EHumanFishingBait : uint8
 {
     Dollar,
     Flash,
     HundredDollarBill,
-    Count
+    Count UMETA(Hidden)
 };
 
 struct FHumanFishingBaitDefinition
@@ -117,7 +118,7 @@ struct FHumanFishingCatchType
 
     bool AcceptsBait(EHumanFishingBait Bait) const
     {
-        return !bRequiresHundredDollarBill || Bait == EHumanFishingBait::HundredDollarBill;
+        return !bRequiresHundredDollarBill || Bait == EHumanFishingBait::HundredDollarBill || Bait == EHumanFishingBait::Flash;
     }
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Beach")
@@ -215,7 +216,28 @@ struct FHumanFishingProgress
     UPROPERTY()
     bool bHasHundredDollarBill = false;
 
+    UPROPERTY()
+    int32 FlashBaitCount = 0;
+
+    UPROPERTY()
+    int32 HundredDollarBillCount = 0;
+
+    UPROPERTY()
+    bool bHasCoveKey = false;
+
+    UPROPERTY()
+    bool bHasBackpackUpgrade = false;
+
+    UPROPERTY()
+    int32 JellyshockCount = 0;
+    UPROPERTY()
+    int32 VioletJellyshockCount = 0;
+
+    UPROPERTY()
+    bool bHasTidalFins = false;
+
     bool IsValid() const;
+    int32 GetColumns() const;
 };
 
 UCLASS(BlueprintType)
@@ -284,11 +306,18 @@ class HUMANFISHINGGAMEPLAY_API UHumanFishingInventory : public UGameInstanceSubs
 
 public:
     static constexpr int32 Columns = 4;
+    static constexpr int32 UpgradedColumns = 5;
     static constexpr int32 Rows = 4;
     static constexpr float MaxHealth = 100.f;
     static constexpr int32 MudskipperCost = 25;
     static constexpr int32 BraidedLineCost = 40;
-    static constexpr int32 HundredDollarBillCost = 30;
+    static constexpr int32 HundredDollarBillCost = 5;
+    static constexpr int32 FlashBaitCost = 10;
+    static constexpr int32 CoveKeyCost = 60;
+    static constexpr int32 BackpackUpgradeCost = 50;
+    static constexpr int32 JellyshockCost = 12;
+    static constexpr int32 VioletJellyshockCost = 35;
+    static constexpr int32 TidalFinsCost = 50;
 
     const TArray<FHumanFishingCatch>& GetCatches() const { return Progress.Catches; }
     int32 GetLifetimeCatchCount() const { return Progress.NextId; }
@@ -311,6 +340,40 @@ public:
     UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
     TArray<FHumanFishingCatch> GetBackpack() const { return Progress.Catches; }
 
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
+    int32 GetColumns() const { return Progress.GetColumns(); }
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
+    bool HasBackpackUpgrade() const { return Progress.bHasBackpackUpgrade; }
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Backpack")
+    bool BuyBackpackUpgrade();
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Equipment")
+    int32 GetJellyshockCount() const { return Progress.JellyshockCount; }
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Equipment")
+    bool BuyJellyshock(int32 Quantity = 1);
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Equipment")
+    bool ConsumeJellyshock();
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Equipment")
+    int32 GetVioletJellyshockCount() const { return Progress.VioletJellyshockCount; }
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Equipment")
+    bool BuyVioletJellyshock(int32 Quantity=1);
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Equipment")
+    bool ConsumeVioletJellyshock();
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Equipment")
+    bool HasTidalFins() const { return Progress.bHasTidalFins; }
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Equipment")
+    bool BuyTidalFins();
+
+    // Session energy survives travel but is not serialized into a save.
+    float SprintEnergy = 5.f;
+    float SprintRecoveryDelay = 0.f;
+
     UFUNCTION(BlueprintPure, Category="Human Fishing|Health")
     float GetHealth() const { return Progress.Health; }
 
@@ -332,14 +395,44 @@ public:
 
     int32 GetRedemptionValue(const UHumanFishingCatalog* Catalog) const;
     int32 RedeemCatches(const UHumanFishingCatalog* Catalog);
+    /** Redeem exactly one catch; preserves lifetime captures and discoveries. */
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Shop")
+    int32 RedeemCatch(const UHumanFishingCatalog* Catalog, int32 CatchId);
 
     bool HasMudskipper() const { return Progress.bHasMudskipper; }
     bool BuyMudskipper();
 
     bool HasBraidedLine() const { return Progress.bHasBraidedLine; }
     bool BuyBraidedLine();
-    bool HasHundredDollarBill() const { return Progress.bHasHundredDollarBill; }
+    bool HasHundredDollarBill() const { return GetBaitCount(EHumanFishingBait::HundredDollarBill) > 0; }
     bool BuyHundredDollarBill();
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Bait")
+    int32 GetBaitCount(EHumanFishingBait Bait) const;
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Bait")
+    bool CanCastSelectedBait() const;
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait")
+    bool BuyBait(EHumanFishingBait Bait, int32 Quantity = 1);
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait")
+    bool ReserveSelectedBait();
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait")
+    void CommitHookedBait();
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait")
+    void FinishBaitUse(bool bRetrieveBeforeHook);
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Travel")
+    bool HasCoveKey() const { return Progress.bHasCoveKey; }
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Travel")
+    bool BuyCoveKey();
+
+    bool HasActiveBaitUse() const { return bBaitReserved; }
+    static int32 GetBaitPrice(EHumanFishingBait Bait);
 
     void ChangeHealth(float Amount);
 
@@ -353,4 +446,7 @@ private:
     FHumanFishingProgress Progress;
 
     EHumanFishingBait SelectedBait = EHumanFishingBait::Dollar;
+    EHumanFishingBait ReservedBait = EHumanFishingBait::Dollar;
+    bool bBaitReserved = false;
+    bool bBaitCommitted = false;
 };

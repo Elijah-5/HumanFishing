@@ -1,4 +1,5 @@
 #include "HumanFishingGuide.h"
+#include "HumanFishingUIStyle.h"
 
 #include "Engine/Texture2D.h"
 #include "HumanFishingPlayerUI.h"
@@ -138,7 +139,7 @@ private:
     static TSharedRef<SWidget> Icon(const FSlateBrush* Brush, float Size)
     {
         return SNew(SBox).WidthOverride(Size).HeightOverride(Size)
-            [ SNew(SImage).Image(Brush) ];
+            [ SNew(SScaleBox).Stretch(EStretch::ScaleToFit)[SNew(SImage).Image(Brush)] ];
     }
 
     const FHumanFishingCatchType* Profile(FName Type) const
@@ -190,7 +191,7 @@ private:
 
     TSharedRef<SWidget> MakeCard(FName Type)
     {
-        return SNew(SButton).ContentPadding(6).ButtonColorAndOpacity_Lambda([this, Type]()
+        return SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).ContentPadding(6).ButtonColorAndOpacity_Lambda([this, Type]()
             { return Selected == Type ? FLinearColor(.23f, .55f, .56f) : FLinearColor(.43f, .52f, .53f); })
             .OnClicked_Lambda([this, Type]()
             {

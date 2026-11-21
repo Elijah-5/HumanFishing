@@ -6,6 +6,7 @@ public class HumanFishingGameplay : ModuleRules
     {
         PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
         PublicDependencyModuleNames.AddRange(new[] { "Core", "CoreUObject", "Engine", "UMG" });
-        PrivateDependencyModuleNames.AddRange(new[] { "InputCore", "Slate", "SlateCore", "AIModule", "NavigationSystem" });
+        PrivateDependencyModuleNames.AddRange(new[] { "InputCore", "Slate", "SlateCore", "AIModule", "NavigationSystem", "AnimGraphRuntime", "ApplicationCore" });
+        if (Target.Platform == UnrealTargetPlatform.Mac) PublicFrameworks.AddRange(new[] { "Cocoa", "QuartzCore" });
     }
 }

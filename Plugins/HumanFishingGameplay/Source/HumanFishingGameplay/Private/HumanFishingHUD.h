@@ -4,6 +4,8 @@
 #include "Widgets/SCompoundWidget.h"
 
 class UHumanFishingPlayerUI;
+/** Shared live inventory, including purchased expansion, selection and drag behavior. */
+TSharedRef<SWidget> MakeHumanFishingBackpack(UHumanFishingPlayerUI* UI,TFunction<void(int32)> OnSelected);
 
 class SHumanFishingHUD : public SCompoundWidget
 {

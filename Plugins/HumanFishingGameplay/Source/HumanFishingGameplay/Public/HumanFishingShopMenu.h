@@ -17,12 +17,14 @@ public:
     void CloseShop();
 
 protected:
+    virtual TSharedRef<SWidget> RebuildWidget() override;
     virtual void NativeOnInitialized() override;
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
     virtual FReply NativeOnKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
 
 private:
+    TSharedPtr<SWidget> ShopContent;
     UHumanFishingPlayerUI* GetPlayerUI() const;
 
     UFUNCTION()

@@ -1,6 +1,11 @@
 #include "HumanFishingShark.h"
+#include "HumanFishingSharkAnimation.h"
 
 #include "Components/SphereComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "Engine/SkeletalMesh.h"
+#include "Animation/AnimSequence.h"
+#include "Misc/PackageName.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
@@ -66,6 +71,11 @@ AHumanFishingShark::AHumanFishingShark()
     Collision->SetCanEverAffectNavigation(false);
     RootComponent = Collision;
 
+    VisualMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SharkVisual"));
+    VisualMesh->SetupAttachment(Collision);
+    VisualMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    VisualMesh->SetCanEverAffectNavigation(false);
+    VisualMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
     static ConstructorHelpers::FObjectFinder<UStaticMesh> SphereMesh(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
     static ConstructorHelpers::FObjectFinder<UStaticMesh> ConeMesh(TEXT("/Engine/BasicShapes/Cone.Cone"));
     Body = MakePart(this, Collision, TEXT("Body"), SphereMesh.Object,
@@ -112,6 +122,7 @@ EHumanFishingSharkState AHumanFishingShark::ChooseState(EHumanFishingSharkState 
 void AHumanFishingShark::OnConstruction(const FTransform& Transform)
 {
     Super::OnConstruction(Transform);
+    ConfigureVisual();
     for (UStaticMeshComponent* Part : { Body.Get(), Fin.Get(), Tail.Get() })
     {
         if (Part && Part->GetStaticMesh() && !Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0)))
@@ -125,15 +136,16 @@ void AHumanFishingShark::OnConstruction(const FTransform& Transform)
 #if WITH_EDITORONLY_DATA
     // The spheres scale with the actor, so cancel that out to show the real ranges.
     const float Scale = FMath::Max(GetActorScale3D().GetAbsMax(), KINDA_SMALL_NUMBER);
-    DetectionPreview->SetSphereRadius(DetectionRadius / Scale);
-    LosePreview->SetSphereRadius(FMath::Max(LoseRadius, DetectionRadius) / Scale);
-    PatrolPreview->SetSphereRadius(PatrolRadius / Scale);
+    if (DetectionPreview) DetectionPreview->SetSphereRadius(DetectionRadius / Scale);
+    if (LosePreview) LosePreview->SetSphereRadius(FMath::Max(LoseRadius, DetectionRadius) / Scale);
+    if (PatrolPreview) PatrolPreview->SetSphereRadius(PatrolRadius / Scale);
 #endif
 }
 
 void AHumanFishingShark::BeginPlay()
 {
     Super::BeginPlay();
+    ConfigureVisual();
     Home = GetActorLocation();
     PickPatrolPoint(Home);
 }
@@ -179,6 +191,22 @@ APawn* AHumanFishingShark::FindTarget(UHumanFishingPlayerUI*& OutUI) const
 void AHumanFishingShark::Tick(float DeltaSeconds)
 {
     Super::Tick(DeltaSeconds);
+    if(ShockFlash>0.f)
+    {
+        ShockFlash=FMath::Max(0.f,ShockFlash-DeltaSeconds);
+        if(ShockOverlay)ShockOverlay->SetScalarParameterValue(TEXT("Strength"),ShockFlash*1.6f);
+        if(ShockFlash<=0.f)VisualMesh->SetOverlayMaterial(nullptr);
+    }
+    if(StunLeft>0.f)
+    {
+        StunLeft=FMath::Max(0.f,StunLeft-DeltaSeconds);
+        CurrentSpeed=0.f;JawOpen=FMath::FInterpTo(JawOpen,0.f,DeltaSeconds,12.f);
+        VisualBank=FMath::FInterpTo(VisualBank,18.f,DeltaSeconds,3.f);
+        VisualMesh->SetRelativeRotation(FRotator(0,VisualYaw,VisualBank));
+        if(StunLeft<=0.f)
+        {CooldownLeft=FMath::Max(CooldownLeft,2.f);SetState(EHumanFishingSharkState::Retreat,nullptr);PickPatrolPoint(GetActorLocation());}
+        return;
+    }
     CooldownLeft = FMath::Max(0.f, CooldownLeft - DeltaSeconds);
 
     UHumanFishingPlayerUI* UI = nullptr;
@@ -188,6 +216,8 @@ void AHumanFishingShark::Tick(float DeltaSeconds)
     Senses.TargetDistance = Target ? FVector::Dist(Target->GetActorLocation(), GetActorLocation())
         : TNumericLimits<float>::Max();
     Senses.bCoolingDown = CooldownLeft > 0.f;
+    const float JawTarget=Target && !Senses.bCoolingDown && Senses.TargetDistance<350.f ? 1.f : 0.f;
+    JawOpen=FMath::FInterpTo(JawOpen,JawTarget,DeltaSeconds,10.f);
 
     // A heavier backpack is easier to notice and worth chasing harder.
     const UHumanFishingInventory* Inventory = UI ? UI->GetInventory() : nullptr;
@@ -255,6 +285,7 @@ void AHumanFishingShark::StealFrom(UHumanFishingPlayerUI* UI)
     FHumanFishingCatch Stolen;
     const bool bStole = Inventory && Inventory->StealMostValuableCatch(Catalog, Stolen);
     const bool bKnockedOut = UI && UI->ApplyAttackDamage(BiteDamage, HealingDelayAfterBite);
+    JawOpen=0.f;
 
     if (UI)
     {
@@ -313,6 +344,9 @@ void AHumanFishingShark::SwimToward(const FVector& Goal, float Speed, float Turn
     Desired.Pitch = FMath::Clamp(Desired.Pitch, -MaxSwimPitch, MaxSwimPitch);
     Desired.Roll = 0.f;
     const FRotator Facing = FMath::RInterpConstantTo(GetActorRotation(), Desired, DeltaSeconds, TurnRate);
+    const float Turn=FMath::FindDeltaAngleDegrees(GetActorRotation().Yaw,Desired.Yaw);
+    VisualBank=FMath::FInterpTo(VisualBank,FMath::Clamp(-Turn*.3f,-18.f,18.f),DeltaSeconds,4.f);
+    VisualMesh->SetRelativeRotation(FRotator(0,VisualYaw,VisualBank));
     SetActorRotation(Facing);
 
     CurrentSpeed = FMath::FInterpTo(CurrentSpeed, Speed, DeltaSeconds, 2.f);
@@ -356,3 +390,56 @@ static FAutoConsoleCommandWithWorldAndArgs SpawnSharkCommand(
 #endif
 
 #undef LOCTEXT_NAMESPACE
+
+void AHumanFishingShark::ConfigureVisual()
+{
+    if (FPackageName::DoesPackageExist(TEXT("/Game/HumanFishing/Ocean/Fauna/SK_Shark_Jaw")))
+    {
+        auto* Mesh=LoadObject<USkeletalMesh>(nullptr,TEXT("/Game/HumanFishing/Ocean/Fauna/SK_Shark_Jaw.SK_Shark_Jaw"));
+        if (Mesh)
+        {
+            if(VisualMesh->GetSkeletalMeshAsset()!=Mesh)VisualMesh->SetSkeletalMesh(Mesh);
+            const FVector Size=Mesh->GetBounds().BoxExtent*2.;
+            VisualMesh->SetRelativeScale3D(FVector(380.f/FMath::Max(Size.X,Size.Y)));
+            VisualYaw=Size.Y>Size.X ? 90.f : 0.f;
+            const FReferenceSkeleton& Skeleton=Mesh->GetRefSkeleton();
+            auto BonePosition=[&Skeleton](FName Name)
+            {
+                int32 Index=Skeleton.FindBoneIndex(Name);if(Index==INDEX_NONE)return FVector::ZeroVector;
+                FTransform Transform=Skeleton.GetRefBonePose()[Index];
+                while((Index=Skeleton.GetParentIndex(Index))!=INDEX_NONE)Transform*=Skeleton.GetRefBonePose()[Index];
+                return Transform.GetTranslation();
+            };
+            const FVector Nose=BonePosition(TEXT("Face"))-BonePosition(TEXT("Spine1"));
+            if(!Nose.IsNearlyZero())VisualYaw=-FMath::RadiansToDegrees(FMath::Atan2(Nose.Y,Nose.X));
+            VisualMesh->SetRelativeRotation(FRotator(0,VisualYaw,0));
+        }
+    }
+    if(VisualMesh->GetSkeletalMeshAsset())
+    {
+        // Animation instance state is transient; always initialize it, even for a serialized mesh.
+        VisualYaw=VisualMesh->GetRelativeRotation().Yaw;
+        if(VisualMesh->GetAnimClass()!=UHumanFishingSharkAnimation::StaticClass())
+            VisualMesh->SetAnimInstanceClass(UHumanFishingSharkAnimation::StaticClass());
+        if(auto* Animation=Cast<UHumanFishingSharkAnimation>(VisualMesh->GetAnimInstance()))
+            Animation->SwimAnimation=LoadObject<UAnimSequence>(nullptr,TEXT("/Game/HumanFishing/Ocean/Fauna/A_Shark_Jaw_Swim.A_Shark_Jaw_Swim"));
+        VisualMesh->VisibilityBasedAnimTickOption=EVisibilityBasedAnimTickOption::OnlyTickPoseWhenRendered;
+        VisualMesh->bEnableUpdateRateOptimizations=true;
+        if(!ShockOverlay)if(auto* Material=LoadObject<UMaterialInterface>(nullptr,TEXT("/Game/HumanFishing/Ocean/Fauna/M_JellyshockFlash.M_JellyshockFlash")))
+            ShockOverlay=UMaterialInstanceDynamic::Create(Material,this);
+    }
+    const bool bHasVisual=VisualMesh->GetSkeletalMeshAsset()!=nullptr;
+    for (auto* Part : {Body.Get(),Fin.Get(),Tail.Get()}) { Part->SetVisibility(!bHasVisual); Part->SetHiddenInGame(bHasVisual); }
+}
+
+float AHumanFishingShark::GetSwimAnimationRate() const
+{return StunLeft>0.f?.12f:FMath::Clamp(CurrentSpeed/FMath::Max(1.f,PatrolSpeed),.5f,2.2f);}
+void AHumanFishingShark::ApplyStun(float Seconds)
+{
+    if(!FMath::IsFinite(Seconds) || Seconds<=0.f)return;
+    StunLeft=FMath::Clamp(Seconds,0.f,30.f);CurrentSpeed=0.f;JawOpen=0.f;
+    ShockFlash=.6f;if(ShockOverlay)VisualMesh->SetOverlayMaterial(ShockOverlay);
+    SetState(EHumanFishingSharkState::Stunned,nullptr);
+    if(auto* Fish=UGameplayStatics::GetPlayerPawn(this,0))if(auto* UI=Fish->FindComponentByClass<UHumanFishingPlayerUI>())
+        UI->ShowAlert(FText::Format(NSLOCTEXT("HumanFishingShark","StunConfirmed","Shark stunned ({0}s)."),FMath::CeilToInt(StunLeft)),2.f);
+}

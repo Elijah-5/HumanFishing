@@ -8,10 +8,12 @@
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
 #include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "HAL/IConsoleManager.h"
 #include "HumanFishingInventory.h"
 #include "HumanFishingPlayerUI.h"
 #include "HumanFishingSave.h"
+#include "HumanFishingShopMenu.h"
 #include "Kismet/GameplayStatics.h"
 
 namespace
@@ -31,6 +33,24 @@ void DevNoteSaving(UWorld* World, FOutputDevice& Output)
         Output.Log(TEXT("Saved to the current slot. Use hf.dev on first to test without keeping changes."));
     }
 }
+
+FAutoConsoleCommandWithWorldArgsAndOutputDevice ShopCommand(
+    TEXT("hf.shop"), TEXT("Open the shop for UI testing without a wildcard object iteration."),
+    FConsoleCommandWithWorldArgsAndOutputDeviceDelegate::CreateLambda(
+        [](const TArray<FString>&, UWorld* World, FOutputDevice& Output)
+        {
+            auto* UI = DevFindPlayerUI(World);
+            auto* PC = World ? UGameplayStatics::GetPlayerController(World, 0) : nullptr;
+            if (!UI || !PC || UI->IsShopOpen()) return;
+            auto* Class = LoadClass<UHumanFishingShopMenu>(nullptr,
+                TEXT("/Game/HumanFishing/UI/WBP_Shop.WBP_Shop_C"));
+            if (!Class) return;
+            if (auto* Shop = CreateWidget<UHumanFishingShopMenu>(PC, Class))
+            {
+                Shop->AddToViewport(100);
+                Output.Log(TEXT("Opened the shop for UI testing."));
+            }
+        }), ECVF_Cheat);
 
 FAutoConsoleCommandWithWorldArgsAndOutputDevice GiveCommand(
     TEXT("hf.give"), TEXT("Add catches to the backpack: hf.give <visitor ID> [count]. Run without arguments to list IDs."),

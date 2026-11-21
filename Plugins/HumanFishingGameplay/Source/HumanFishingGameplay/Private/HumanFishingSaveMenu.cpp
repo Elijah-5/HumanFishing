@@ -1,4 +1,5 @@
 #include "HumanFishingSaveMenu.h"
+#include "HumanFishingUIStyle.h"
 
 #include "Engine/GameInstance.h"
 #include "Engine/GameViewportClient.h"
@@ -75,7 +76,7 @@ public:
                                 ]
                                 + SHorizontalBox::Slot().AutoWidth()
                                 [
-                                    SNew(SButton).Text(LOCTEXT("Quit", "Quit")).ContentPadding(FMargin(16, 6))
+                                    SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("Quit", "Quit")).ContentPadding(FMargin(16, 6))
                                     .OnClicked_Lambda([this]()
                                     {
                                         if (World.IsValid())
@@ -132,13 +133,13 @@ private:
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 5)
                 [
-                    SNew(SButton).Text(LOCTEXT("Continue", "Continue")).ContentPadding(FMargin(10, 5))
+                    SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("Continue", "Continue")).ContentPadding(FMargin(10, 5))
                     .ButtonColorAndOpacity(Sea).Visibility(Summary.bReadable ? EVisibility::Visible : EVisibility::Hidden)
                     .OnClicked_Lambda([this, Slot]() { return Launch(Slot, false); })
                 ]
                 + SVerticalBox::Slot().AutoHeight().Padding(0, 0, 0, 5)
                 [
-                    SNew(SButton).ContentPadding(FMargin(10, 5))
+                    SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).ContentPadding(FMargin(10, 5))
                     .Text_Lambda([this, Slot]()
                     {
                         return PendingOverwrite == Slot ? LOCTEXT("Overwrite", "Confirm Overwrite")
@@ -158,7 +159,7 @@ private:
                 ]
                 + SVerticalBox::Slot().AutoHeight()
                 [
-                    SNew(SButton).Text(LOCTEXT("Cancel", "Cancel")).ContentPadding(FMargin(10, 5))
+                    SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("Cancel", "Cancel")).ContentPadding(FMargin(10, 5))
                     .Visibility_Lambda([this, Slot]() { return PendingOverwrite == Slot ? EVisibility::Visible : EVisibility::Hidden; })
                     .OnClicked_Lambda([this]()
                     {

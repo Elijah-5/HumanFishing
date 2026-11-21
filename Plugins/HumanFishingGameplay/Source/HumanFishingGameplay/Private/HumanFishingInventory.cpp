@@ -4,10 +4,10 @@
 
 namespace
 {
-bool CanPlaceCatch(const TArray<FHumanFishingCatch>& Catches, FIntPoint Cell, FIntPoint Size, int32 IgnoreId)
+bool CanPlaceCatch(const TArray<FHumanFishingCatch>& Catches, FIntPoint Cell, FIntPoint Size, int32 IgnoreId, int32 Columns)
 {
-    if (Size.X < 1 || Size.X > UHumanFishingInventory::Columns || Size.Y < 1 || Size.Y > UHumanFishingInventory::Rows ||
-        Cell.X < 0 || Cell.X > UHumanFishingInventory::Columns - Size.X ||
+    if (Size.X < 1 || Size.X > Columns || Size.Y < 1 || Size.Y > UHumanFishingInventory::Rows ||
+        Cell.X < 0 || Cell.X > Columns - Size.X ||
         Cell.Y < 0 || Cell.Y > UHumanFishingInventory::Rows - Size.Y)
     {
         return false;
@@ -22,11 +22,16 @@ bool CanPlaceCatch(const TArray<FHumanFishingCatch>& Catches, FIntPoint Cell, FI
 }
 }
 
+int32 FHumanFishingProgress::GetColumns() const
+{
+    return bHasBackpackUpgrade ? UHumanFishingInventory::UpgradedColumns : UHumanFishingInventory::Columns;
+}
+
 bool FHumanFishingProgress::IsValid() const
 {
-    if (NextId < 0 || Seaweed < 0 || !FMath::IsFinite(Health) || Health < 0 || Health > UHumanFishingInventory::MaxHealth ||
+    if (NextId < 0 || Seaweed < 0 || FlashBaitCount < 0 || HundredDollarBillCount < 0 || JellyshockCount < 0 || VioletJellyshockCount < 0 || !FMath::IsFinite(Health) || Health < 0 || Health > UHumanFishingInventory::MaxHealth ||
         CaughtTypes.Contains(NAME_None) || CaughtTypes.Num() > NextId ||
-        Catches.Num() > UHumanFishingInventory::Rows * UHumanFishingInventory::Columns)
+        Catches.Num() > UHumanFishingInventory::Rows * GetColumns())
     {
         return false;
     }
@@ -36,7 +41,7 @@ bool FHumanFishingProgress::IsValid() const
     for (const FHumanFishingCatch& Item : Catches)
     {
         if (Item.Id < 0 || Item.Id >= NextId || Ids.Contains(Item.Id) || !CaughtTypes.Contains(Item.Type) ||
-            !CanPlaceCatch(Empty, Item.Cell, Item.Size, INDEX_NONE))
+            !CanPlaceCatch(Empty, Item.Cell, Item.Size, INDEX_NONE, GetColumns()))
         {
             return false;
         }
@@ -44,7 +49,7 @@ bool FHumanFishingProgress::IsValid() const
     }
     return !Catches.ContainsByPredicate([this](const FHumanFishingCatch& Item)
     {
-        return !CanPlaceCatch(Catches, Item.Cell, Item.Size, Item.Id);
+        return !CanPlaceCatch(Catches, Item.Cell, Item.Size, Item.Id, GetColumns());
     });
 }
 
@@ -83,7 +88,7 @@ int32 UHumanFishingCatalog::GetCatchSeaweedValue(const FHumanFishingCatch& Item)
 {
     const FHumanFishingCatchType* Profile = Types.Find(Item.Type);
     if (!Profile || Item.Size.X < 1 || Item.Size.Y < 1 ||
-        Item.Size.X > UHumanFishingInventory::Columns || Item.Size.Y > UHumanFishingInventory::Rows)
+        Item.Size.X > UHumanFishingInventory::UpgradedColumns || Item.Size.Y > UHumanFishingInventory::Rows)
     {
         return 0;
     }
@@ -97,12 +102,12 @@ const FHumanFishingCatch* UHumanFishingInventory::FindCatch(int32 Id) const
 
 bool UHumanFishingInventory::CanPlace(FIntPoint Cell, FIntPoint Size, int32 IgnoreId) const
 {
-    return CanPlaceCatch(Progress.Catches, Cell, Size, IgnoreId);
+    return CanPlaceCatch(Progress.Catches, Cell, Size, IgnoreId, GetColumns());
 }
 
 bool UHumanFishingInventory::TryAddCatch(FName Type, FIntPoint Size)
 {
-    if (Type.IsNone() || Size.X < 1 || Size.X > Columns || Size.Y < 1 || Size.Y > Rows ||
+    if (Type.IsNone() || Size.X < 1 || Size.X > GetColumns() || Size.Y < 1 || Size.Y > Rows ||
         Progress.NextId == MAX_int32)
     {
         return false;
@@ -110,7 +115,7 @@ bool UHumanFishingInventory::TryAddCatch(FName Type, FIntPoint Size)
 
     for (int32 Row = 0; Row <= Rows - Size.Y; ++Row)
     {
-        for (int32 Column = 0; Column <= Columns - Size.X; ++Column)
+        for (int32 Column = 0; Column <= GetColumns() - Size.X; ++Column)
         {
             const FIntPoint Cell(Column, Row);
             if (CanPlace(Cell, Size))
@@ -209,7 +214,7 @@ float UHumanFishingInventory::GetLoadFraction() const
     {
         Used += Catch.Size.X * Catch.Size.Y;
     }
-    return FMath::Clamp(static_cast<float>(Used) / (Columns * Rows), 0.f, 1.f);
+    return FMath::Clamp(static_cast<float>(Used) / (GetColumns() * Rows), 0.f, 1.f);
 }
 
 bool UHumanFishingInventory::StealMostValuableCatch(const UHumanFishingCatalog* Catalog, FHumanFishingCatch& OutStolen)
@@ -239,29 +244,132 @@ bool UHumanFishingInventory::StealMostValuableCatch(const UHumanFishingCatalog* 
 int32 UHumanFishingInventory::RedeemCatches(const UHumanFishingCatalog* Catalog)
 {
     const int32 Value = GetRedemptionValue(Catalog);
-    if (Value > 0)
-    {
-        Progress.Catches.Reset();
-        Progress.Seaweed += Value;
-        NotifyChange();
-    }
+    if (Value <= 0 || Progress.Seaweed > MAX_int32 - Value) return 0;
+    Progress.Catches.Reset();
+    Progress.Seaweed += Value;
+    NotifyChange();
     return Value;
+}
+
+int32 UHumanFishingInventory::RedeemCatch(const UHumanFishingCatalog* Catalog,int32 CatchId)
+{
+    const auto* Catch=FindCatch(CatchId);
+    const int32 Value=Catch && Catalog?Catalog->GetCatchSeaweedValue(*Catch):0;
+    if(Value<=0 || Progress.Seaweed>MAX_int32-Value)return 0;
+    Progress.Catches.RemoveAll([CatchId](const FHumanFishingCatch& C){return C.Id==CatchId;});
+    Progress.Seaweed+=Value;NotifyChange();return Value;
 }
 
 void UHumanFishingInventory::ToggleBait()
 {
+    if (bBaitReserved) return;
     switch (SelectedBait)
     {
-    case EHumanFishingBait::Dollar:
-        SelectedBait = EHumanFishingBait::Flash;
-        break;
-    case EHumanFishingBait::Flash:
-        SelectedBait = HasHundredDollarBill() ? EHumanFishingBait::HundredDollarBill : EHumanFishingBait::Dollar;
-        break;
-    default:
-        SelectedBait = EHumanFishingBait::Dollar;
-        break;
+    case EHumanFishingBait::Dollar: SelectedBait = EHumanFishingBait::HundredDollarBill; break;
+    case EHumanFishingBait::HundredDollarBill: SelectedBait = EHumanFishingBait::Flash; break;
+    default: SelectedBait = EHumanFishingBait::Dollar; break;
     }
+}
+
+int32 UHumanFishingInventory::GetBaitPrice(EHumanFishingBait Bait)
+{
+    return Bait == EHumanFishingBait::Flash ? FlashBaitCost :
+        Bait == EHumanFishingBait::HundredDollarBill ? HundredDollarBillCost : 0;
+}
+
+int32 UHumanFishingInventory::GetBaitCount(EHumanFishingBait Bait) const
+{
+    if (Bait == EHumanFishingBait::Dollar) return INDEX_NONE; // Unlimited.
+    const int32 Count = Bait == EHumanFishingBait::Flash ? Progress.FlashBaitCount :
+        Bait == EHumanFishingBait::HundredDollarBill ? Progress.HundredDollarBillCount : 0;
+    return FMath::Max(0, Count - (bBaitReserved && !bBaitCommitted && ReservedBait == Bait ? 1 : 0));
+}
+
+bool UHumanFishingInventory::CanCastSelectedBait() const
+{
+    return !bBaitReserved && (SelectedBait == EHumanFishingBait::Dollar || GetBaitCount(SelectedBait) > 0);
+}
+
+bool UHumanFishingInventory::BuyBait(EHumanFishingBait Bait, int32 Quantity)
+{
+    const int32 Price = GetBaitPrice(Bait);
+    if (Price <= 0 || Quantity <= 0 || Quantity > Progress.Seaweed / Price) return false;
+    int32& Count = Bait == EHumanFishingBait::Flash ? Progress.FlashBaitCount : Progress.HundredDollarBillCount;
+    if (Count > MAX_int32 - Quantity) return false;
+    Progress.Seaweed -= Price * Quantity;
+    Count += Quantity;
+    NotifyChange();
+    return true;
+}
+
+bool UHumanFishingInventory::ReserveSelectedBait()
+{
+    if (!CanCastSelectedBait()) return false;
+    ReservedBait = SelectedBait;
+    bBaitReserved = true;
+    bBaitCommitted = false;
+    return true;
+}
+
+void UHumanFishingInventory::CommitHookedBait()
+{
+    if (!bBaitReserved || bBaitCommitted) return;
+    bBaitCommitted = true;
+    if (ReservedBait == EHumanFishingBait::Dollar) return;
+    int32& Count = ReservedBait == EHumanFishingBait::Flash ? Progress.FlashBaitCount : Progress.HundredDollarBillCount;
+    Count = FMath::Max(0, Count - 1);
+    NotifyChange();
+}
+
+void UHumanFishingInventory::FinishBaitUse(bool bRetrieveBeforeHook)
+{
+    if (!bBaitReserved) return;
+    if (!bRetrieveBeforeHook) CommitHookedBait();
+    bBaitReserved = bBaitCommitted = false;
+}
+
+bool UHumanFishingInventory::BuyCoveKey()
+{
+    return BuyUpgrade(CoveKeyCost, Progress.bHasCoveKey);
+}
+
+bool UHumanFishingInventory::BuyBackpackUpgrade()
+{
+    return BuyUpgrade(BackpackUpgradeCost, Progress.bHasBackpackUpgrade);
+}
+
+bool UHumanFishingInventory::BuyJellyshock(int32 Quantity)
+{
+    if (Quantity <= 0 || Quantity > Progress.Seaweed / JellyshockCost ||
+        Progress.JellyshockCount > MAX_int32 - Quantity) return false;
+    Progress.Seaweed -= Quantity * JellyshockCost;
+    Progress.JellyshockCount += Quantity;
+    NotifyChange();
+    return true;
+}
+
+bool UHumanFishingInventory::ConsumeJellyshock()
+{
+    if (Progress.JellyshockCount <= 0) return false;
+    --Progress.JellyshockCount;
+    NotifyChange();
+    return true;
+}
+
+bool UHumanFishingInventory::BuyVioletJellyshock(int32 Quantity)
+{
+    if(Quantity<=0 || Quantity>Progress.Seaweed/VioletJellyshockCost || Progress.VioletJellyshockCount>MAX_int32-Quantity)return false;
+    Progress.Seaweed-=Quantity*VioletJellyshockCost;Progress.VioletJellyshockCount+=Quantity;NotifyChange();return true;
+}
+bool UHumanFishingInventory::ConsumeVioletJellyshock()
+{
+    if(Progress.VioletJellyshockCount<=0)return false;
+    --Progress.VioletJellyshockCount;NotifyChange();return true;
+}
+
+bool UHumanFishingInventory::BuyTidalFins()
+{
+    return BuyUpgrade(TidalFinsCost, Progress.bHasTidalFins);
 }
 
 bool UHumanFishingInventory::BuyMudskipper()
@@ -276,7 +384,7 @@ bool UHumanFishingInventory::BuyBraidedLine()
 
 bool UHumanFishingInventory::BuyHundredDollarBill()
 {
-    return BuyUpgrade(HundredDollarBillCost, Progress.bHasHundredDollarBill);
+    return BuyBait(EHumanFishingBait::HundredDollarBill, 1);
 }
 
 bool UHumanFishingInventory::BuyUpgrade(int32 Cost, bool& bOwned)

@@ -11,6 +11,11 @@
       "Name": "HumanFishingGameplay",
       "Type": "Runtime",
       "LoadingPhase": "Default"
+    },
+    {
+      "Name": "HumanFishingEditor",
+      "Type": "Editor",
+      "LoadingPhase": "Default"
     }
   ]
 }

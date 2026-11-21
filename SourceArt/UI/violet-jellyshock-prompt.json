@@ -1,0 +1,6 @@
+{
+  "tool": "built-in image_gen",
+  "file": "T_UI_VioletJellyshock.png",
+  "reference": "T_UI_Jellyshock.png",
+  "prompt": "Use case: stylized-concept. Asset type: transparent game inventory item icon for Human Fishing. Input image 1 is a STYLE AND COMPOSITION REFERENCE for a new sibling item, not an asset to overwrite. Create ONE premium VIOLET JELLYSHOCK CAPSULE icon matching the reference's low-poly faceted illustrated 3D style, strong navy contours and clean readable game silhouette. Keep the same round glass bottle silhouette, gold collar and cork, centered square framing and transparent padding. Inside the bottle, show a glowing purple jellyfish with a violet translucent umbrella bell, exactly three curled lavender tentacles, a bright pearl-white lightning core with two small violet electric branches. Purple and magenta replace the teal water/jellyfish palette; retain warm brass accents. The icon must remain legible at 32 px. Genuine transparent background, no text, no prices, no UI frame, no checkerboard, no drop-shadow outside the bottle, no extra objects. Preserve proportions; do not stretch the bottle."
+}

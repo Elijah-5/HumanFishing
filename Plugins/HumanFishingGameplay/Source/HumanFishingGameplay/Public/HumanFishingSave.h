@@ -44,6 +44,8 @@ class HUMANFISHINGGAMEPLAY_API UHumanFishingSaveSubsystem : public UGameInstance
 
 public:
     static constexpr int32 SlotCount = 3;
+    static constexpr int32 CurrentSaveVersion = 4;
+    static bool MigrateSave(UHumanFishingSaveGame* Save);
     static const FName ShoreLevel;
     static const FName CoveLevel;
     static const FName OceanLevel;

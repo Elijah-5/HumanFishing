@@ -1,4 +1,5 @@
 #include "HumanFishingPlayerUI.h"
+#include "HumanFishingAbilities.h"
 
 #include "Engine/GameViewportClient.h"
 #include "Engine/LocalPlayer.h"
@@ -10,8 +11,11 @@
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "HumanFishingHUD.h"
+#include "UObject/UnrealType.h"
 #include "HumanFishingInventory.h"
 #include "HumanFishingSave.h"
+#include "HumanFishingTravelZone.h"
+#include "Camera/PlayerCameraManager.h"
 #include "InputCoreTypes.h"
 #include "Kismet/GameplayStatics.h"
 
@@ -23,8 +27,16 @@ UHumanFishingPlayerUI::UHumanFishingPlayerUI()
 void UHumanFishingPlayerUI::BeginPlay()
 {
     Super::BeginPlay();
+    Abilities=GetOwner()->FindComponentByClass<UHumanFishingAbilities>();
+    if(!Abilities)
+    {
+        Abilities=NewObject<UHumanFishingAbilities>(GetOwner(),TEXT("OceanAbilities"));
+        GetOwner()->AddInstanceComponent(Abilities);Abilities->RegisterComponent();
+    }
     const FName Level(*UGameplayStatics::GetCurrentLevelName(this));
     bDeepOcean = Level == UHumanFishingSaveSubsystem::OceanLevel;
+    if (auto* PC = GetLocalController())
+        if (PC->PlayerCameraManager) PC->PlayerCameraManager->StartCameraFade(1, 0, .25f, FLinearColor::Black);
     if (auto* Save = GetSaveSubsystem())
     {
         Save->LevelReady(Level);
@@ -101,6 +113,7 @@ bool UHumanFishingPlayerUI::AdvanceBeachHealth(bool bInWater, bool bGrounded)
     const float DamageMultiplier = Inventory->HasMudskipper() ? .5f : 1.f;
     Inventory->ChangeHealth(-BeachDamagePerSecond * DamageMultiplier * GetWorld()->GetDeltaSeconds());
     bEvacuating = Inventory->GetHealth() <= 0.f;
+    if (bEvacuating) Inventory->FinishBaitUse(false);
     return bEvacuating;
 }
 
@@ -119,6 +132,7 @@ bool UHumanFishingPlayerUI::ApplyAttackDamage(float Damage, float HealingDelay)
     }
 
     // Knocked out at sea: return to where the fish entered the deep ocean.
+    if(Abilities)Abilities->CancelSprint();
     APawn* Fish = Cast<APawn>(GetOwner());
     AController* Controller = Fish ? Fish->GetController() : nullptr;
     AGameModeBase* Mode = GetWorld()->GetAuthGameMode();
@@ -181,6 +195,12 @@ bool UHumanFishingPlayerUI::IsNewGuideToast() const
     return !NewGuideType.IsNone() && NewGuideType == GetToastType() && (!Save || !Save->IsDeveloperMode());
 }
 
+void UHumanFishingPlayerUI::SetShopOpen(bool bOpen)
+{
+    bShopOpen=bOpen;
+    if(bOpen && Abilities)Abilities->CancelSprint();
+}
+
 void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
 {
     APlayerController* Controller = GetLocalController();
@@ -190,6 +210,7 @@ void UHumanFishingPlayerUI::SetBackpackOpen(bool bOpen)
     }
 
     bBackpackOpen = bOpen;
+    if(bOpen && Abilities)Abilities->CancelSprint();
     Controller->FlushPressedKeys();
     Controller->SetShowMouseCursor(bOpen);
     if (bOpen)
@@ -240,6 +261,7 @@ int32 UHumanFishingBlueprintLibrary::GetSeaweedBalance(const UObject* WorldConte
 
 void UHumanFishingPlayerUI::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+    if (auto* Inventory = GetInventory()) Inventory->FinishBaitUse(true);
     ResetFishingCamera();
     if (ULocalPlayer* Player = OverlayPlayer.Get())
     {
@@ -338,5 +360,59 @@ void UHumanFishingBlueprintLibrary::ResetFishingCamera(APawn* Fish)
     if (UHumanFishingPlayerUI* UI = Fish ? Fish->FindComponentByClass<UHumanFishingPlayerUI>() : nullptr)
     {
         UI->ResetFishingCamera();
+    }
+}
+
+
+FText UHumanFishingPlayerUI::GetTravelPrompt() const
+{
+    const auto* Fish = Cast<APawn>(GetOwner());
+    const auto* Zone = AHumanFishingTravelZone::FindNearby(Fish);
+    return Zone && !bShopOpen && !bBackpackOpen ? Zone->GetPrompt(Fish) : FText::GetEmpty();
+}
+
+int32 UHumanFishingPlayerUI::GetTravelUnlockCost() const
+{
+    const auto* Fish=Cast<APawn>(GetOwner());const auto* Zone=AHumanFishingTravelZone::FindNearby(Fish);
+    return Zone && Zone->IsLocked(Fish)?UHumanFishingInventory::CoveKeyCost:0;
+}
+
+bool UHumanFishingBlueprintLibrary::CanUseFishingInput(const UObject* WorldContextObject)
+{
+    const auto* Fish = UGameplayStatics::GetPlayerPawn(WorldContextObject, 0);
+    const auto* UI = Fish ? Fish->FindComponentByClass<UHumanFishingPlayerUI>() : nullptr;
+    return UI && !UI->IsDeepOcean() && !UI->IsShopOpen() && !UI->IsBackpackOpen()
+        && !AHumanFishingTravelZone::FindNearby(Fish);
+}
+
+bool UHumanFishingBlueprintLibrary::ReserveFishingBait(const UObject* WorldContextObject)
+{
+    auto* Inventory = ProgressInventory(WorldContextObject);
+    if (!CanUseFishingInput(WorldContextObject)) return false;
+    if (Inventory && Inventory->ReserveSelectedBait()) return true;
+    if (auto* Fish = UGameplayStatics::GetPlayerPawn(WorldContextObject, 0))
+        if (auto* UI = Fish->FindComponentByClass<UHumanFishingPlayerUI>())
+            UI->ShowAlert(NSLOCTEXT("HumanFishingBait", "Empty", "Out of bait — restock at Seaweed Exchange."));
+    return false;
+}
+
+void UHumanFishingBlueprintLibrary::HookFishingBait(const UObject* WorldContextObject)
+{
+    if (auto* Inventory = ProgressInventory(WorldContextObject)) Inventory->CommitHookedBait();
+}
+
+void UHumanFishingBlueprintLibrary::FinishFishingBait(const UObject* WorldContextObject, bool bRetrieveBeforeHook)
+{
+    if (auto* Inventory = ProgressInventory(WorldContextObject)) Inventory->FinishBaitUse(bRetrieveBeforeHook);
+}
+
+void UHumanFishingBlueprintLibrary::PrepareFishingPause(UObject* WorldContextObject)
+{
+    if (!WorldContextObject) return;
+    const auto* Phase = FindFProperty<FIntProperty>(WorldContextObject->GetClass(), TEXT("Phase"));
+    if (Phase && Phase->GetPropertyValue_InContainer(WorldContextObject) <= 5)
+    {
+        FinishFishingBait(WorldContextObject, true);
+        if (auto* Reset = WorldContextObject->FindFunction(TEXT("ResetFishing"))) WorldContextObject->ProcessEvent(Reset, nullptr);
     }
 }

@@ -1,9 +1,16 @@
 #include "HumanFishingHUD.h"
+#include "HumanFishingUIStyle.h"
+#include "HumanFishingUIArt.h"
 
 #include "Engine/Texture2D.h"
+#include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "GameFramework/Pawn.h"
+#include "GameFramework/PlayerController.h"
 #include "Framework/Application/SlateApplication.h"
 #include "HumanFishingGuide.h"
 #include "HumanFishingInventory.h"
+#include "HumanFishingAbilities.h"
 #include "HumanFishingPlayerUI.h"
 #include "HumanFishingSave.h"
 #include "Input/DragAndDrop.h"
@@ -29,9 +36,9 @@
 namespace
 {
 constexpr float CellSize = 92.f;
-const FLinearColor Ink(.016f, .033f, .048f, .97f);
-const FLinearColor Teal(.31f, .86f, .77f);
-const FLinearColor Gold(.99f, .72f, .33f);
+const FLinearColor Ink = HumanFishingUI::Ink();
+const FLinearColor Teal = HumanFishingUI::Teal();
+const FLinearColor Gold = HumanFishingUI::Gold();
 
 const FSlateBrush* WhiteBrush()
 {
@@ -43,6 +50,49 @@ const FHumanFishingCatchType* Lookup(const UHumanFishingPlayerUI* UI, FName Type
     const UHumanFishingCatalog* Catalog = UI ? UI->GetCatalog() : nullptr;
     return Catalog ? Catalog->Types.Find(Type) : nullptr;
 }
+
+class SJellyshockReticle : public SLeafWidget
+{
+public:
+    SLATE_BEGIN_ARGS(SJellyshockReticle){} SLATE_END_ARGS()
+    void Construct(const FArguments&,UHumanFishingPlayerUI* InUI){UI=InUI;}
+    virtual FVector2D ComputeDesiredSize(float) const override {return FVector2D(1);}
+    virtual int32 OnPaint(const FPaintArgs&,const FGeometry& Geometry,const FSlateRect&,
+        FSlateWindowElementList& Out,int32 Layer,const FWidgetStyle&,bool) const override
+    {
+        const auto* PlayerUI=UI.Get();const auto* Abilities=PlayerUI?PlayerUI->GetAbilities():nullptr;
+        if(!Abilities || !Abilities->ShowJellyshockReticle())return Layer;
+        const auto Aim=Abilities->QueryJellyshockAim();const auto* Inventory=PlayerUI->GetInventory();
+        const FLinearColor Ready=Inventory && Inventory->GetJellyshockCount()==0 && Inventory->GetVioletJellyshockCount()>0?FLinearColor(.8f,.4f,1):HumanFishingUI::Teal();
+        const FLinearColor Color=!Inventory || (Inventory->GetJellyshockCount()==0 && Inventory->GetVioletJellyshockCount()==0)?HumanFishingUI::Muted():
+            Aim.bBlocked?FLinearColor(1,.48f,.26f):Aim.bAssisted?Ready:HumanFishingUI::Cream();
+        auto Line=[&](FVector2D From,FVector2D To)
+        {FSlateDrawElement::MakeLines(Out,Layer,Geometry.ToPaintGeometry(),{From,To},ESlateDrawEffect::None,Color,true,1.5f);};
+        const FVector2D Center=Geometry.GetLocalSize()*.5;
+        for(const FVector2D Direction:{FVector2D(1,0),FVector2D(-1,0),FVector2D(0,1),FVector2D(0,-1)})
+            Line(Center+Direction*5,Center+Direction*12);
+        if(Aim.bAssisted)
+        {
+            const auto* Pawn=Cast<APawn>(PlayerUI->GetOwner());
+            const auto* PC=Pawn?Cast<APlayerController>(Pawn->GetController()):nullptr;
+            FVector2D Pixel,Viewport;
+            if(PC && PC->ProjectWorldLocationToScreen(Aim.Point,Pixel,true) && GEngine && GEngine->GameViewport)
+            {
+                GEngine->GameViewport->GetViewportSize(Viewport);
+                if(Viewport.X>0 && Viewport.Y>0)
+                {
+                    const FVector2D Point=Pixel/Viewport*Geometry.GetLocalSize();
+                    for(int32 X:{-1,1})for(int32 Y:{-1,1})
+                    {const FVector2D Corner=Point+FVector2D(X*18,Y*18);
+                     Line(Corner,Corner-FVector2D(X*7,0));Line(Corner,Corner-FVector2D(0,Y*7));}
+                }
+            }
+        }
+        return Layer+1;
+    }
+private:
+    TWeakObjectPtr<UHumanFishingPlayerUI> UI;
+};
 
 class FCatchDrag : public FDragDropOperation
 {
@@ -93,6 +143,7 @@ public:
         PressedId = INDEX_NONE;
         Invalidate(EInvalidateWidgetReason::Paint);
     }
+    void SetOnSelectionChanged(FSimpleDelegate Delegate){OnSelectionChanged=MoveTemp(Delegate);}
 
     const FHumanFishingCatch* SelectedCatch() const
     {
@@ -112,7 +163,17 @@ public:
 
     virtual FVector2D ComputeDesiredSize(float) const override
     {
-        return FVector2D(CellSize * UHumanFishingInventory::Columns, CellSize * UHumanFishingInventory::Rows);
+        return FVector2D(CellSize * ColumnCount(), CellSize * UHumanFishingInventory::Rows);
+    }
+
+    virtual void Tick(const FGeometry& Geometry, double Time, float DeltaTime) override
+    {
+        SLeafWidget::Tick(Geometry, Time, DeltaTime);
+        if (CachedColumns != ColumnCount())
+        {
+            CachedColumns = ColumnCount();
+            Invalidate(EInvalidateWidgetReason::Layout);
+        }
     }
 
     virtual int32 OnPaint(const FPaintArgs&, const FGeometry& Geometry, const FSlateRect&,
@@ -127,10 +188,10 @@ public:
 
         for (int32 Row = 0; Row < UHumanFishingInventory::Rows; ++Row)
         {
-            for (int32 Col = 0; Col < UHumanFishingInventory::Columns; ++Col)
+            for (int32 Col = 0; Col < ColumnCount(); ++Col)
             {
                 const FVector2D Position(Cell.X * Col, Cell.Y * Row);
-                Draw(0, Position + FVector2D(2), Cell - FVector2D(4), WhiteBrush(), FLinearColor(.040f, .096f, .119f, 1));
+                Draw(0,Position+FVector2D(2),Cell-FVector2D(4),WhiteBrush(),FLinearColor(.040f,.096f,.119f,1));
             }
         }
 
@@ -178,7 +239,7 @@ public:
                 for (int32 Col = 0; Col < Item->Size.X; ++Col)
                 {
                     const FIntPoint At = PreviewCell + FIntPoint(Col, Row);
-                    if (At.X >= 0 && At.X < UHumanFishingInventory::Columns && At.Y >= 0 && At.Y < UHumanFishingInventory::Rows)
+                    if (At.X >= 0 && At.X < ColumnCount() && At.Y >= 0 && At.Y < UHumanFishingInventory::Rows)
                     {
                         Draw(4, FVector2D(Cell.X * At.X, Cell.Y * At.Y) + FVector2D(2),
                             Cell - FVector2D(4), WhiteBrush(), Color);
@@ -267,10 +328,16 @@ private:
         return PlayerUI.IsValid() ? PlayerUI->GetInventory() : nullptr;
     }
 
-    static FVector2D Unit(const FGeometry& Geometry)
+    int32 ColumnCount() const
+    {
+        const auto* Data = Inventory();
+        return Data ? Data->GetColumns() : UHumanFishingInventory::Columns;
+    }
+
+    FVector2D Unit(const FGeometry& Geometry) const
     {
         const FVector2D Size = Geometry.GetLocalSize();
-        return FVector2D(Size.X / UHumanFishingInventory::Columns, Size.Y / UHumanFishingInventory::Rows);
+        return FVector2D(Size.X / ColumnCount(), Size.Y / UHumanFishingInventory::Rows);
     }
 
     static FIntPoint AtCell(FVector2D Cursor, FVector2D Cell)
@@ -278,12 +345,13 @@ private:
         return FIntPoint(FMath::FloorToInt(Cursor.X / Cell.X), FMath::FloorToInt(Cursor.Y / Cell.Y));
     }
 
-    static FIntPoint DropCell(const FGeometry& Geometry, const FDragDropEvent& Event, const FCatchDrag& Drag)
+    FIntPoint DropCell(const FGeometry& Geometry, const FDragDropEvent& Event, const FCatchDrag& Drag) const
     {
         return AtCell(Geometry.AbsoluteToLocal(Event.GetScreenSpacePosition()) - Drag.Offset, Unit(Geometry));
     }
 
     TWeakObjectPtr<UHumanFishingPlayerUI> PlayerUI;
+    int32 CachedColumns = 0;
     TMap<FName, FSlateBrush> Portraits;
     FSimpleDelegate OnSelectionChanged;
     int32 SelectedId = INDEX_NONE;
@@ -337,7 +405,7 @@ public:
                     ]
                     + SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0, 10, 0, 0)
                     [
-                        SNew(SBox).WidthOverride(460).HeightOverride(80)
+                        SNew(SBox).WidthOverride(460).HeightOverride(110)
                         [
                             SNew(SBorder).Padding(FMargin(12, 8)).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink)
                             [
@@ -348,12 +416,17 @@ public:
                                     .Font(FCoreStyle::GetDefaultFontStyle("Bold", 14))
                                     .ColorAndOpacity(FLinearColor(.92f, .97f, .98f))
                                 ]
+                                +SVerticalBox::Slot().AutoHeight().Padding(0,4,0,0)
+                                [SNew(SBox).Visibility_Lambda([this](){return Grid->SelectedCatch()?EVisibility::Visible:EVisibility::Collapsed;})
+                                 [HumanFishingUI::Currency(TAttribute<FText>::CreateLambda([this]()
+                                  {const auto* Item=Grid->SelectedCatch();const auto* UI=PlayerUI.Get();const auto* Catalog=UI?UI->GetCatalog():nullptr;
+                                   return Item && Catalog?FText::AsNumber(Catalog->GetCatchSeaweedValue(*Item)):FText::GetEmpty();}),16)]]
                                 + SVerticalBox::Slot().AutoHeight().Padding(0, 7, 0, 0)
                                 [
                                     SNew(SHorizontalBox)
                                     + SHorizontalBox::Slot().AutoWidth().Padding(0, 0, 8, 0)
                                     [
-                                        SNew(SButton)
+                                        SNew(SButton).ButtonStyle(&HumanFishingUI::Button())
                                         .ContentPadding(FMargin(12, 5))
                                         .Text_Lambda([this]() {
                                             return IsConfirmingDiscard() ? LOCTEXT("ConfirmDiscard", "Confirm discard") : LOCTEXT("Discard", "Discard...");
@@ -363,7 +436,7 @@ public:
                                     ]
                                     + SHorizontalBox::Slot().AutoWidth()
                                     [
-                                        SNew(SButton).Text(LOCTEXT("KeepCatch", "Keep"))
+                                        SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("KeepCatch", "Keep"))
                                         .ContentPadding(FMargin(12, 5))
                                         .Visibility_Lambda([this]() { return IsConfirmingDiscard() ? EVisibility::Visible : EVisibility::Collapsed; })
                                         .OnClicked_Lambda([this]() { CancelDiscard(); return FReply::Handled(); })
@@ -399,13 +472,12 @@ private:
         {
             return LOCTEXT("SelectCatch", "Select a catch to see its value");
         }
-        const UHumanFishingCatalog* Catalog = PlayerUI.IsValid() ? PlayerUI->GetCatalog() : nullptr;
         const FHumanFishingCatchType* Profile = Lookup(PlayerUI.Get(), Item->Type);
         const EHumanFishingRarity Rarity = Profile ? Profile->Rarity : EHumanFishingRarity::White;
-        return FText::Format(LOCTEXT("CatchDetails", "{0}  •  {1}  •  {2}×{3}  •  {4} Seaweed"),
+        return FText::Format(LOCTEXT("CatchDetailsV3", "{0}  |  {1}  |  {2}×{3}"),
             Profile ? Profile->DisplayName : FText::FromName(Item->Type),
             StaticEnum<EHumanFishingRarity>()->GetDisplayNameTextByValue(static_cast<int64>(Rarity)),
-            Item->Size.X, Item->Size.Y, Catalog ? Catalog->GetCatchSeaweedValue(*Item) : 0);
+            Item->Size.X, Item->Size.Y);
     }
 
     bool IsConfirmingDiscard() const
@@ -474,7 +546,7 @@ public:
                         [ SNew(SSpacer) ]
                         + SHorizontalBox::Slot().AutoWidth()
                         [
-                            SNew(SButton).Text(LOCTEXT("ClosePause", "Close")).ContentPadding(FMargin(14, 5))
+                            SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("ClosePause", "Close")).ContentPadding(FMargin(14, 5))
                             .OnClicked(this, &SFishingPausePanel::Close)
                         ]
                     ]
@@ -489,7 +561,7 @@ public:
                         SNew(SHorizontalBox)
                         + SHorizontalBox::Slot().AutoWidth()
                         [
-                            SNew(SButton).ContentPadding(FMargin(14, 5))
+                            SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).ContentPadding(FMargin(14, 5))
                             .Text_Lambda([this]()
                             {
                                 const auto* Save = SaveSubsystem();
@@ -500,7 +572,7 @@ public:
                         ]
                         + SHorizontalBox::Slot().AutoWidth().Padding(8, 0, 8, 0)
                         [
-                            SNew(SButton).Text(LOCTEXT("RetrySave", "Retry Save"))
+                            SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(LOCTEXT("RetrySave", "Retry Save"))
                             .Visibility(this, &SFishingPausePanel::SaveErrorVisibility)
                             .OnClicked_Lambda([this]()
                             {
@@ -554,7 +626,7 @@ private:
 
     TSharedRef<SWidget> Tab(FText Text, int32 Index)
     {
-        return SNew(SButton).Text(Text).ContentPadding(FMargin(16, 6))
+        return SNew(SButton).ButtonStyle(&HumanFishingUI::Button()).Text(Text).ContentPadding(FMargin(16, 6))
             .ButtonColorAndOpacity_Lambda([this, Index]()
             {
                 return Pages && Pages->GetActiveWidgetIndex() == Index ? Teal : FLinearColor(.56f, .65f, .66f);
@@ -619,7 +691,7 @@ public:
                     [
                         SNew(STextBlock)
                         .Text_Lambda([Health]() { return FText::Format(LOCTEXT("HealthValue", "HP   {0} / 100"), FMath::CeilToInt(Health())); })
-                        .Font(FCoreStyle::GetDefaultFontStyle("Bold", 14)).ColorAndOpacity(FLinearColor(.92f, .97f, .98f))
+                        .Font(HumanFishingUI::Font(18,true)).ColorAndOpacity(HumanFishingUI::Text())
                     ]
                     + SVerticalBox::Slot().AutoHeight()
                     [
@@ -714,6 +786,16 @@ private:
 };
 }
 
+TSharedRef<SWidget> MakeHumanFishingBackpack(UHumanFishingPlayerUI* UI,TFunction<void(int32)> OnSelected)
+{
+    auto Grid=SNew(SBackpackGrid,UI);
+    const TWeakPtr<SBackpackGrid> Weak=Grid;
+    // Use a tiny wrapper delegate rather than duplicating inventory layout or hit testing.
+    Grid->SetOnSelectionChanged(FSimpleDelegate::CreateLambda([Weak,OnSelected]()
+    {if(auto G=Weak.Pin()){const auto* C=G->SelectedCatch();OnSelected(C?C->Id:INDEX_NONE);}}));
+    return Grid;
+}
+
 void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPlayerUI)
 {
     const TWeakObjectPtr<UHumanFishingPlayerUI> Weak(InPlayerUI);
@@ -728,8 +810,9 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
         const auto Definition = Catalog->GetBaitDefinition(static_cast<EHumanFishingBait>(Index));
         auto& Readout = BaitReadouts[Index];
         Readout.Portrait.SetResourceObject(Definition.Portrait);
-        Readout.Portrait.SetImageSize(FVector2D(42.f, 42.f));
-        Readout.Text = FText::Format(LOCTEXT("BaitSwitch", "{0}  ·  B Switch"), Definition.Name);
+        if (Definition.Portrait)
+            Readout.Portrait.SetImageSize(FVector2D(Definition.Portrait->GetSizeX(), Definition.Portrait->GetSizeY()));
+        Readout.Text = Definition.Name;
     }
     const auto GetBaitReadout = [this, Weak]() -> const FBaitReadout&
     {
@@ -754,6 +837,15 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
     ChildSlot
     [
         SNew(SOverlay)
+        +SOverlay::Slot()[SNew(SJellyshockReticle,InPlayerUI).Visibility(EVisibility::HitTestInvisible)]
+        +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24,24,0,0)
+        [SNew(SBorder).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink).Padding(FMargin(12,8))
+            [SNew(SVerticalBox)
+                +SVerticalBox::Slot().AutoHeight()
+                [SNew(STextBlock).Font(HumanFishingUI::Font(21,true)).ColorAndOpacity(HumanFishingUI::Text())
+                    .Text_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return FText::Format(LOCTEXT("CaptureCountV3","Captures: {0}"),I?I->GetCatches().Num():0);})]
+                +SVerticalBox::Slot().AutoHeight().Padding(0,4,0,0)
+                [HumanFishingUI::Currency(TAttribute<FText>::CreateLambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return FText::AsNumber(I?I->GetSeaweed():0);}),21)] ] ]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24, 136, 0, 0)
         [ SNew(SHealthReadout, InPlayerUI).Visibility(EVisibility::HitTestInvisible) ]
         + SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24, 184, 0, 0)
@@ -768,13 +860,77 @@ void SHumanFishingHUD::Construct(const FArguments&, UHumanFishingPlayerUI* InPla
                 SNew(SHorizontalBox)
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0, 0, 5, 0)
                 [
-                    SNew(SImage).Image_Lambda([GetBaitReadout]() { return &GetBaitReadout().Portrait; })
+                    SNew(SBox).WidthOverride(42).HeightOverride(42)
+                    [SNew(SScaleBox).Stretch(EStretch::ScaleToFit)
+                    [SNew(SImage).Image_Lambda([GetBaitReadout]() { return &GetBaitReadout().Portrait; })
+                    .ColorAndOpacity_Lambda([Weak]() { const auto* I = Weak.IsValid() ? Weak->GetInventory() : nullptr;
+                        return I && I->GetBaitCount(I->GetSelectedBait()) == 0 ? HumanFishingUI::Muted() : FLinearColor::White; })]]
                 ]
                 + SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
                 [
-                    SNew(STextBlock).Font(FCoreStyle::GetDefaultFontStyle("Regular", 13))
-                    .Text_Lambda([GetBaitReadout]() { return GetBaitReadout().Text; })
+                    SNew(STextBlock).Font(HumanFishingUI::Font(18))
+                    .ColorAndOpacity_Lambda([Weak]()
+                    {
+                        const auto* I = Weak.IsValid() ? Weak->GetInventory() : nullptr;
+                        return I && I->GetBaitCount(I->GetSelectedBait()) == 0 ? HumanFishingUI::Muted() : HumanFishingUI::Text();
+                    })
+                    .Text_Lambda([GetBaitReadout, Weak]()
+                    {
+                        const auto* I = Weak.IsValid() ? Weak->GetInventory() : nullptr;
+                        const int32 Count = I ? I->GetBaitCount(I->GetSelectedBait()) : INDEX_NONE;
+                        return FText::Format(LOCTEXT("BaitCountV3", "{0} ({1}) | Switch(B)"), GetBaitReadout().Text,
+                            Count == INDEX_NONE ? FText::FromString(TEXT("∞")) : FText::AsNumber(Count));
+                    })
                 ]
+            ]
+        ]
+        +SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(24,240,0,0)
+        [SNew(SBorder).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink).Padding(FMargin(9,6))
+            .Visibility_Lambda([Weak](){const auto* U=Weak.Get();const auto* A=U?U->GetAbilities():nullptr;
+                return A && A->IsUnderwater() && !U->IsBackpackOpen() && !U->IsShopOpen()?EVisibility::HitTestInvisible:EVisibility::Collapsed;})
+            [SNew(SVerticalBox)
+                +SVerticalBox::Slot().AutoHeight()
+                [SNew(SHorizontalBox)
+                    +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,7,0)
+                    [SNew(SBox).IsEnabled_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return I && I->GetJellyshockCount()>0;})
+                        [HumanFishingUI::Icon(EHumanFishingUIArt::Jellyshock,32)]]
+                    +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                    [SNew(STextBlock).Font(HumanFishingUI::Font(18,true))
+                        .ColorAndOpacity_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return I && I->GetJellyshockCount()>0?HumanFishingUI::Text():HumanFishingUI::Muted();})
+                        .Text_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return FText::Format(LOCTEXT("ShockStock","{0}  [F]"),I?I->GetJellyshockCount():0);})]
+                    +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(15,0,6,0)
+                    [SNew(SBox).IsEnabled_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return I && I->GetVioletJellyshockCount()>0;})
+                        [HumanFishingUI::Icon(EHumanFishingUIArt::VioletJellyshock,32)]]
+                    +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)
+                    [SNew(STextBlock).Font(HumanFishingUI::Font(18,true))
+                        .ColorAndOpacity_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return I && I->GetVioletJellyshockCount()>0?FLinearColor(.85f,.55f,1):HumanFishingUI::Muted();})
+                        .Text_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return FText::Format(LOCTEXT("VioletStock","{0}  [G]"),I?I->GetVioletJellyshockCount():0);})]
+                    +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(15,0,0,0)
+                    [SNew(SBox).Visibility_Lambda([Weak](){const auto* I=Weak.IsValid()?Weak->GetInventory():nullptr;return I && I->HasTidalFins()?EVisibility::Visible:EVisibility::Collapsed;})
+                        [SNew(SHorizontalBox)
+                            +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center).Padding(0,0,5,0)[HumanFishingUI::Icon(EHumanFishingUIArt::TidalFins,30)]
+                            +SHorizontalBox::Slot().AutoWidth().VAlign(VAlign_Center)[SNew(STextBlock).Text(LOCTEXT("ShiftHint","[Shift]")).Font(HumanFishingUI::Font(16)).ColorAndOpacity(Teal)]]]]
+                +SVerticalBox::Slot().AutoHeight().Padding(0,7,0,0)
+                [SNew(SBox).WidthOverride(180)
+                    .Visibility_Lambda([Weak](){const auto* A=Weak.IsValid()?Weak->GetAbilities():nullptr;return A && A->ShowSprintMeter()?EVisibility::Visible:EVisibility::Collapsed;})
+                    [SNew(SVerticalBox)
+                        +SVerticalBox::Slot().AutoHeight()
+                        [SNew(SBox).HeightOverride(7)[SNew(SProgressBar).FillColorAndOpacity(Teal)
+                            .Percent_Lambda([Weak](){const auto* A=Weak.IsValid()?Weak->GetAbilities():nullptr;return TOptional<float>(A?A->GetSprintFraction():0.f);})]]]]]]
+        + SOverlay::Slot().HAlign(HAlign_Center).VAlign(VAlign_Bottom).Padding(24, 0, 24, 96)
+        [
+            SNew(SBorder).BorderImage(WhiteBrush()).BorderBackgroundColor(Ink).Padding(FMargin(20, 12))
+            .Visibility_Lambda([Weak]() { return Weak.IsValid() && !Weak->GetTravelPrompt().IsEmpty()
+                ? EVisibility::HitTestInvisible : EVisibility::Collapsed; })
+            [SNew(SVerticalBox)
+                +SVerticalBox::Slot().AutoHeight()
+                [SNew(STextBlock).Font(HumanFishingUI::Font(20,true)).ColorAndOpacity(Teal)
+                    .Justification(ETextJustify::Center).Text_Lambda([Weak](){return Weak.IsValid()?Weak->GetTravelPrompt():FText::GetEmpty();})]
+                +SVerticalBox::Slot().AutoHeight().HAlign(HAlign_Center).Padding(0,5,0,0)
+                [SNew(SBox).Visibility_Lambda([Weak](){return Weak.IsValid() && Weak->GetTravelUnlockCost()>0?EVisibility::Visible:EVisibility::Collapsed;})
+                    [SNew(SHorizontalBox)
+                        +SHorizontalBox::Slot().AutoWidth().Padding(0,0,8,0)[HumanFishingUI::Icon(EHumanFishingUIArt::Locked,26)]
+                        +SHorizontalBox::Slot().AutoWidth()[HumanFishingUI::Currency(TAttribute<FText>(FText::AsNumber(UHumanFishingInventory::CoveKeyCost)),20)]]]
             ]
         ]
         + SOverlay::Slot().HAlign(HAlign_Right).VAlign(VAlign_Top).Padding(0, 20, 20, 0)

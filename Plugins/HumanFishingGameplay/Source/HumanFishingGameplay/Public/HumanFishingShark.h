@@ -8,7 +8,9 @@ class APawn;
 class USceneComponent;
 class USphereComponent;
 class UStaticMeshComponent;
+class USkeletalMeshComponent;
 class UHumanFishingPlayerUI;
+class UMaterialInstanceDynamic;
 
 UENUM(BlueprintType)
 enum class EHumanFishingSharkState : uint8
@@ -18,7 +20,8 @@ enum class EHumanFishingSharkState : uint8
     // Swims straight at the fish.
     Chase,
     // Just stole from the fish; patrols and ignores the fish until the cooldown ends.
-    Retreat
+    Retreat,
+    Stunned
 };
 
 /** What the shark knows about the fish this frame. */
@@ -61,6 +64,16 @@ public:
 
     UFUNCTION(BlueprintPure, Category="Shark")
     EHumanFishingSharkState GetState() const { return State; }
+
+    UFUNCTION(BlueprintCallable, Category="Shark")
+    void ApplyStun(float Seconds = 30.f);
+
+    UFUNCTION(BlueprintPure, Category="Shark")
+    float GetStunTimeRemaining() const { return StunLeft; }
+
+    float GetJawOpen() const { return JawOpen; }
+    float GetSwimAnimationRate() const;
+    virtual FVector GetVelocity() const override { return GetActorForwardVector()*CurrentSpeed; }
 
     /** Radius around the placed location that the shark patrols. */
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Shark|Patrol", meta=(ClampMin="100"))
@@ -139,6 +152,9 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Shark")
     TObjectPtr<USphereComponent> Collision;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Shark|Visual")
+    TObjectPtr<USkeletalMeshComponent> VisualMesh;
+
     /** Placeholder body. Replace the meshes in a Blueprint subclass, or hide them and add a skeletal mesh. */
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Shark")
     TObjectPtr<UStaticMeshComponent> Body;
@@ -150,6 +166,7 @@ protected:
     TObjectPtr<UStaticMeshComponent> Tail;
 
 private:
+    void ConfigureVisual();
     FHumanFishingSharkRanges GetRanges(float Load) const;
     APawn* FindTarget(UHumanFishingPlayerUI*& OutUI) const;
     void SetState(EHumanFishingSharkState NewState, UHumanFishingPlayerUI* UI);
@@ -164,6 +181,13 @@ private:
     float CurrentSpeed = 0.f;
     float PatrolPointTimeLeft = 0.f;
     float CooldownLeft = 0.f;
+    float StunLeft = 0.f;
+    float JawOpen = 0.f;
+    float VisualBank = 0.f;
+    float VisualYaw = 0.f;
+    float ShockFlash = 0.f;
+    UPROPERTY(Transient)
+    TObjectPtr<UMaterialInstanceDynamic> ShockOverlay;
 
 #if WITH_EDITORONLY_DATA
     UPROPERTY()

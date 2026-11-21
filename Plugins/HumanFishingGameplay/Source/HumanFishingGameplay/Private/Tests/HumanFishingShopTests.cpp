@@ -2,6 +2,8 @@
 
 #include "Engine/GameInstance.h"
 #include "HumanFishingInventory.h"
+#include "HumanFishingSave.h"
+#include "Kismet/GameplayStatics.h"
 #include "Misc/AutomationTest.h"
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingShopRedemption,
@@ -59,4 +61,62 @@ bool FHumanFishingMudskipperPurchase::RunTest(const FString& Parameters)
     return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingSingleSale,
+    "HumanFishing.Shop.SingleSale",EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FHumanFishingSingleSale::RunTest(const FString& Parameters)
+{
+    auto* Game=NewObject<UGameInstance>();auto* I=NewObject<UHumanFishingInventory>(Game);
+    auto* Catalog=NewObject<UHumanFishingCatalog>();Catalog->Types.Add(TEXT("Tourist")).Rarity=EHumanFishingRarity::White;
+    I->TryAddCatch(TEXT("Tourist"),FIntPoint(1,2));I->TryAddCatch(TEXT("Tourist"),FIntPoint(1,2));
+    const int32 Id=I->GetCatches()[0].Id;
+    TestEqual(TEXT("One selected catch pays its exact value"),I->RedeemCatch(Catalog,Id),2);
+    TestEqual(TEXT("Other catch remains"),I->GetCatches().Num(),1);
+    TestEqual(TEXT("No duplicate payout"),I->RedeemCatch(Catalog,Id),0);
+    TestEqual(TEXT("No unknown catch payout"),I->RedeemCatch(Catalog,MAX_int32),0);
+    TestEqual(TEXT("Lifetime count preserved"),I->GetLifetimeCatchCount(),2);
+    TestTrue(TEXT("Guide discovery preserved"),I->HasCaughtType(TEXT("Tourist")));
+    const int32 Remaining=I->GetCatches()[0].Id;I->SetSeaweed(MAX_int32);
+    TestEqual(TEXT("Overflow rejects sale"),I->RedeemCatch(Catalog,Remaining),0);
+    TestEqual(TEXT("Overflow keeps catch"),I->GetCatches().Num(),1);
+    TestEqual(TEXT("Missing catalog keeps catch"),I->RedeemCatch(nullptr,Remaining),0);
+    return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingBackpackUpgrade,
+    "HumanFishing.Shop.BackpackUpgrade", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FHumanFishingBackpackUpgrade::RunTest(const FString& Parameters)
+{
+    auto* Game = NewObject<UGameInstance>();
+    auto* I = NewObject<UHumanFishingInventory>(Game);
+    TestEqual(TEXT("Default width"), I->GetColumns(), 4);
+    TestFalse(TEXT("No free expansion"), I->BuyBackpackUpgrade());
+    TestTrue(TEXT("Fill original backpack"), I->TryAddCatch(TEXT("Tourist"), FIntPoint(4,4)));
+    TestFalse(TEXT("Original backpack full"), I->TryAddCatch(TEXT("Tourist"), FIntPoint(1,1)));
+    I->SetSeaweed(UHumanFishingInventory::BackpackUpgradeCost);
+    TestTrue(TEXT("Buy expansion"), I->BuyBackpackUpgrade());
+    TestEqual(TEXT("Price deducted"), I->GetSeaweed(), 0);
+    TestEqual(TEXT("Expanded width"), I->GetColumns(), 5);
+    TestEqual(TEXT("Existing catch stays in place"), I->GetCatches()[0].Cell, FIntPoint::ZeroValue);
+    TestEqual(TEXT("Load uses expanded capacity"), I->GetLoadFraction(), .8f);
+    TestTrue(TEXT("New column usable"), I->TryAddCatch(TEXT("Tourist"), FIntPoint(1,4)));
+    TestEqual(TEXT("New catch fills fifth column"), I->GetCatches()[1].Cell, FIntPoint(4,0));
+    TestFalse(TEXT("Twenty cells is full"), I->TryAddCatch(TEXT("Tourist"), FIntPoint(1,1)));
+    I->SetSeaweed(100);
+    TestFalse(TEXT("Expansion cannot be bought twice"), I->BuyBackpackUpgrade());
+    TestEqual(TEXT("Repeat purchase preserves balance"), I->GetSeaweed(), 100);
+    auto* Save = NewObject<UHumanFishingSaveGame>();
+    Save->Version = UHumanFishingSaveSubsystem::CurrentSaveVersion;
+    Save->Progress = I->GetProgress();
+    TArray<uint8> Bytes;
+    TestTrue(TEXT("Serialize expanded progress"), UGameplayStatics::SaveGameToMemory(Save, Bytes));
+    auto* Restored = Cast<UHumanFishingSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes));
+    if (TestNotNull(TEXT("Deserialize expanded progress"), Restored))
+    {
+        TestTrue(TEXT("Expansion persists"), Restored->Progress.bHasBackpackUpgrade);
+        TestEqual(TEXT("Width persists"), Restored->Progress.GetColumns(), 5);
+        TestTrue(TEXT("Expanded saved catches valid"), Restored->Progress.IsValid());
+        Restored->Progress.bHasBackpackUpgrade = false;
+        TestFalse(TEXT("Fifth column requires purchased expansion"), Restored->Progress.IsValid());
+    }
+    return true;
+}
 #endif

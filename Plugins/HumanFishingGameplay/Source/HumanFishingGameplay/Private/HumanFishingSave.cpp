@@ -17,7 +17,7 @@ const FName UHumanFishingSaveSubsystem::MenuLevel(TEXT("L_SaveMenu"));
 
 namespace
 {
-constexpr int32 SaveVersion = 1;
+constexpr int32 SaveVersion = UHumanFishingSaveSubsystem::CurrentSaveVersion;
 constexpr int32 ChecksumSize = sizeof(uint32);
 constexpr double HealthSaveInterval = 5.;
 
@@ -100,7 +100,7 @@ UHumanFishingSaveGame* UHumanFishingSaveSubsystem::ReadLatest(int32 Slot, int32&
         }
         bExists = true;
         auto* Save = ReadSlot(Name);
-        if (Save && Save->Version == SaveVersion && Save->Revision > 0 && Save->SavedAt.GetTicks() > 0 &&
+        if (Save && Save->Version >= 1 && Save->Version <= SaveVersion && Save->Revision > 0 && Save->SavedAt.GetTicks() > 0 &&
             IsPlayableLevel(Save->Level) && Save->Progress.IsValid() &&
             (!Latest || Save->Revision > Latest->Revision))
         {
@@ -179,7 +179,11 @@ bool UHumanFishingSaveSubsystem::StartSlot(UWorld* World, int32 Slot, bool bNewG
         return false;
     }
 
+    const bool bMigrated = MigrateSave(Save);
+    Inventory->FinishBaitUse(true);
     Inventory->Progress = Save->Progress;
+    Inventory->SprintEnergy = 5.f;
+    Inventory->SprintRecoveryDelay = 0.f;
     Inventory->SelectedBait = EHumanFishingBait::Dollar;
     ActiveSlot = Slot;
     ActiveGeneration = Generation;
@@ -187,12 +191,22 @@ bool UHumanFishingSaveSubsystem::StartSlot(UWorld* World, int32 Slot, bool bNewG
     ResumeLevel = Save->Level;
     bDirty = bSaveError = false;
     LastSaveAttempt = FPlatformTime::Seconds();
+    if (bMigrated)
+    {
+        bDirty = true;
+        if (!Flush())
+        {
+            ActiveSlot = INDEX_NONE;
+            return false;
+        }
+    }
     OpenLevel(World, ResumeLevel);
     return true;
 }
 
 bool UHumanFishingSaveSubsystem::ReturnToMenu(UWorld* World)
 {
+    if (Inventory) Inventory->FinishBaitUse(true);
     if (!World || !Flush())
     {
         return false;
@@ -211,6 +225,7 @@ bool UHumanFishingSaveSubsystem::ReturnToMenu(UWorld* World)
 
 void UHumanFishingSaveSubsystem::LevelReady(FName Level)
 {
+    if (Inventory && Level != ResumeLevel) Inventory->FinishBaitUse(true);
     if (IsPlayableLevel(Level) && Level != ResumeLevel)
     {
         ResumeLevel = Level;
@@ -262,6 +277,7 @@ bool UHumanFishingSaveSubsystem::Tick(float)
 
 void UHumanFishingSaveSubsystem::HandleExit()
 {
+    if (Inventory) Inventory->FinishBaitUse(true);
     Flush();
 }
 
@@ -288,5 +304,22 @@ bool UHumanFishingSaveSubsystem::LeaveDeveloperMode(UWorld* World)
     ResumeLevel = DeveloperSnapshot->Level;
     DeveloperSnapshot.Reset();
     OpenLevel(World, ResumeLevel);
+    return true;
+}
+
+
+bool UHumanFishingSaveSubsystem::MigrateSave(UHumanFishingSaveGame* Save)
+{
+    if (!Save || Save->Version < 1 || Save->Version >= CurrentSaveVersion) return false;
+    if (Save->Version == 1)
+    {
+        if (Save->Progress.bHasHundredDollarBill)
+            Save->Progress.Seaweed = static_cast<int32>(FMath::Min<int64>(MAX_int32,
+                static_cast<int64>(Save->Progress.Seaweed) + 30));
+        Save->Progress.bHasHundredDollarBill = false;
+        Save->Progress.FlashBaitCount = Save->Progress.HundredDollarBillCount = 0;
+        Save->Progress.bHasCoveKey = Save->Level == CoveLevel;
+    }
+    Save->Version = CurrentSaveVersion;
     return true;
 }

@@ -12,6 +12,7 @@ class UHumanFishingCatalog;
 class UHumanFishingInventory;
 class UHumanFishingSaveSubsystem;
 class ULocalPlayer;
+class UHumanFishingAbilities;
 
 UINTERFACE(BlueprintType)
 class HUMANFISHINGGAMEPLAY_API UHumanFishingBackpackListener : public UInterface
@@ -59,12 +60,15 @@ public:
     void SetBackpackOpen(bool bOpen);
     void UpdateFishingCamera(bool bFishing);
     void ResetFishingCamera();
+    FText GetTravelPrompt() const;
+    int32 GetTravelUnlockCost() const;
 
     UFUNCTION(BlueprintPure, Category="Human Fishing|Backpack")
     bool IsBackpackOpen() const { return bBackpackOpen; }
-    void SetShopOpen(bool bOpen) { bShopOpen = bOpen; }
+    void SetShopOpen(bool bOpen);
     bool IsShopOpen() const { return bShopOpen; }
     bool IsDeepOcean() const { return bDeepOcean; }
+    UHumanFishingAbilities* GetAbilities() const { return Abilities; }
 
     const UHumanFishingCatalog* GetCatalog() const { return Catalog.Get(); }
     UHumanFishingInventory* GetInventory() const;
@@ -78,6 +82,8 @@ protected:
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
+    UPROPERTY(Transient)
+    TObjectPtr<UHumanFishingAbilities> Abilities;
     void EnsureOverlay(APlayerController* Controller);
     APlayerController* GetLocalController() const;
 
@@ -105,6 +111,21 @@ class HUMANFISHINGGAMEPLAY_API UHumanFishingBlueprintLibrary : public UBlueprint
     GENERATED_BODY()
 
 public:
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait", meta=(WorldContext="WorldContextObject"))
+    static bool ReserveFishingBait(const UObject* WorldContextObject);
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait", meta=(WorldContext="WorldContextObject"))
+    static void HookFishingBait(const UObject* WorldContextObject);
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait", meta=(WorldContext="WorldContextObject"))
+    static void FinishFishingBait(const UObject* WorldContextObject, bool bRetrieveBeforeHook);
+
+    UFUNCTION(BlueprintPure, Category="Human Fishing|Bait", meta=(WorldContext="WorldContextObject"))
+    static bool CanUseFishingInput(const UObject* WorldContextObject);
+
+    UFUNCTION(BlueprintCallable, Category="Human Fishing|Bait", meta=(WorldContext="WorldContextObject"))
+    static void PrepareFishingPause(UObject* WorldContextObject);
+
     /** Number of catches currently in the backpack. */
     UFUNCTION(BlueprintPure, Category="Human Fishing|Progress", meta=(WorldContext="WorldContextObject"))
     static int32 GetCaptureCount(const UObject* WorldContextObject);

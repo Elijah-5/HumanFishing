@@ -1,0 +1,570 @@
+{
+  "before_bytes": 570509413,
+  "removed": [
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_CCRCCPlastic_MSK.uasset",
+      "bytes": 10271972,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_ASAOPMASK_MSK.uasset",
+      "bytes": 3612605,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_D.uasset",
+      "bytes": 9033544,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_Tan.uasset",
+      "bytes": 1357770,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_CCRCCPlastic_MSK.uasset",
+      "bytes": 13144043,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_BN.uasset",
+      "bytes": 21139527,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_N.uasset",
+      "bytes": 7269335,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_D.uasset",
+      "bytes": 5740376,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_BN.uasset",
+      "bytes": 18514168,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_MSR_MSK.uasset",
+      "bytes": 11038184,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_Tan.uasset",
+      "bytes": 2153790,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_01_N.uasset",
+      "bytes": 7198251,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_ASAOPMASK_MSK.uasset",
+      "bytes": 8341381,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Manny/T_Manny_02_MSR_MSK.uasset",
+      "bytes": 13677610,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Shared/T_UE_Logo_M.uasset",
+      "bytes": 69960,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01ID_BN.uasset",
+      "bytes": 16108599,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02ID_N.uasset",
+      "bytes": 5217676,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01ID_Tan.uasset",
+      "bytes": 1104627,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02ID_D.uasset",
+      "bytes": 6732524,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02ID_MSR_MSK.uasset",
+      "bytes": 13169771,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02ID_BN.uasset",
+      "bytes": 19706883,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01ID_MSR_MSK.uasset",
+      "bytes": 11656141,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01_CCRCCPlastic_MSK.uasset",
+      "bytes": 12399926,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01_ASAOMASK_MSK.uasset",
+      "bytes": 5834834,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02_ASAOMASK_MSK.uasset",
+      "bytes": 6901973,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01ID_D.uasset",
+      "bytes": 4711156,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_01ID_N.uasset",
+      "bytes": 5217676,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02_CCRCCPlastic_MSK.uasset",
+      "bytes": 13427858,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Textures/Quinn/T_Quinn_02ID_Tan.uasset",
+      "bytes": 1758494,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/M_Mannequin.uasset",
+      "bytes": 83079,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Functions/MF_logo3layers.uasset",
+      "bytes": 56603,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Functions/ChromaticCurve.uasset",
+      "bytes": 6306,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Functions/MF_Diffraction.uasset",
+      "bytes": 32183,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Functions/ML_BaseColorFallOff.uasset",
+      "bytes": 13437,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Functions/CA_Mannequin.uasset",
+      "bytes": 4812,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Instances/Manny/MI_Manny_01.uasset",
+      "bytes": 21590,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Instances/Manny/MI_Manny_02.uasset",
+      "bytes": 24853,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Instances/Quinn/MI_Quinn_01.uasset",
+      "bytes": 19667,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Materials/Instances/Quinn/MI_Quinn_02.uasset",
+      "bytes": 25230,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Meshes/SKM_Manny_Simple.uasset",
+      "bytes": 18527372,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Meshes/SK_Mannequin.uasset",
+      "bytes": 160872,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Meshes/SKM_Manny.uasset",
+      "bytes": 34534883,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Meshes/SKM_Quinn_Simple.uasset",
+      "bytes": 19371553,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Meshes/SKM_Quinn.uasset",
+      "bytes": 36495654,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/PA_Mannequin.uasset",
+      "bytes": 289285,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/CR_Mannequin_Body.uasset",
+      "bytes": 16036573,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/ABP_Quinn_PostProcess.uasset",
+      "bytes": 463249,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/ABP_Manny_PostProcess.uasset",
+      "bytes": 463451,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/CR_Mannequin_Procedural.uasset",
+      "bytes": 2267523,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_foot_r_anim.uasset",
+      "bytes": 129462,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_lowerarm_l_pose.uasset",
+      "bytes": 361644,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_thigh_r_pose.uasset",
+      "bytes": 557972,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_hand_l_pose.uasset",
+      "bytes": 169206,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_upperarm_l_anim.uasset",
+      "bytes": 207486,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_calf_r_pose.uasset",
+      "bytes": 207430,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_clavicle_r_anim.uasset",
+      "bytes": 141486,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_clavicle_r_pose.uasset",
+      "bytes": 206334,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_calf_r_anim.uasset",
+      "bytes": 141462,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_upperarm_l_pose.uasset",
+      "bytes": 641633,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_hand_l_anim.uasset",
+      "bytes": 135460,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_thigh_r_anim.uasset",
+      "bytes": 195470,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_lowerarm_l_anim.uasset",
+      "bytes": 203916,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_foot_r_pose.uasset",
+      "bytes": 132176,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_clavicle_l_anim.uasset",
+      "bytes": 141484,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_hand_r_pose.uasset",
+      "bytes": 169206,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_upperarm_r_anim.uasset",
+      "bytes": 207488,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_calf_l_pose.uasset",
+      "bytes": 207430,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_foot_l_anim.uasset",
+      "bytes": 129460,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_lowerarm_r_pose.uasset",
+      "bytes": 361644,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_thigh_l_pose.uasset",
+      "bytes": 557972,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_thigh_l_anim.uasset",
+      "bytes": 195468,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_lowerarm_r_anim.uasset",
+      "bytes": 165486,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_foot_l_pose.uasset",
+      "bytes": 132176,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_calf_l_anim.uasset",
+      "bytes": 141452,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_upperarm_r_pose.uasset",
+      "bytes": 630195,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_hand_r_anim.uasset",
+      "bytes": 135462,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Manny/Manny_clavicle_l_pose.uasset",
+      "bytes": 205732,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_thigh_l_pose.uasset",
+      "bytes": 557618,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_clavicle_r_anim.uasset",
+      "bytes": 183734,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_foot_l_anim.uasset",
+      "bytes": 171708,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_upperarm_l_anim.uasset",
+      "bytes": 206632,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_calf_l_pose.uasset",
+      "bytes": 245188,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_hand_r_pose.uasset",
+      "bytes": 169153,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_lowerarm_l_pose.uasset",
+      "bytes": 399529,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_hand_r_anim.uasset",
+      "bytes": 158608,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_lowerarm_l_anim.uasset",
+      "bytes": 194631,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_calf_l_anim.uasset",
+      "bytes": 190030,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_upperarm_l_pose.uasset",
+      "bytes": 485440,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_foot_l_pose.uasset",
+      "bytes": 132123,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_clavicle_r_pose.uasset",
+      "bytes": 205980,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_thigh_l_anim.uasset",
+      "bytes": 218614,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_calf_r_pose.uasset",
+      "bytes": 245269,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_lowerarm_r_pose.uasset",
+      "bytes": 399529,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_hand_l_pose.uasset",
+      "bytes": 169153,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_foot_r_anim.uasset",
+      "bytes": 171710,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_upperarm_r_anim.uasset",
+      "bytes": 206634,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_clavicle_l_anim.uasset",
+      "bytes": 222063,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_thigh_r_pose.uasset",
+      "bytes": 557618,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_thigh_r_anim.uasset",
+      "bytes": 218616,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_clavicle_l_pose.uasset",
+      "bytes": 205936,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_upperarm_r_pose.uasset",
+      "bytes": 488450,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_foot_r_pose.uasset",
+      "bytes": 132123,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_lowerarm_r_anim.uasset",
+      "bytes": 194633,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_hand_l_anim.uasset",
+      "bytes": 177708,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    },
+    {
+      "path": "Characters/Mannequins/Rigs/Poses/Quinn/Quinn_calf_r_anim.uasset",
+      "bytes": 228099,
+      "reason": "No hard, soft, management, native runtime, catalog or map dependency after replacing the legacy visitor template mesh."
+    }
+  ],
+  "archived_sources": [
+    {
+      "path": "Assets/Fishing/Dollar.fbx",
+      "bytes": 65644
+    },
+    {
+      "path": "Assets/Humans/BusinessMan.fbx",
+      "bytes": 8118684
+    },
+    {
+      "path": "Assets/Humans/AnimatedWoman.fbx",
+      "bytes": 8122924
+    },
+    {
+      "path": "Assets/Humans/Worker.fbx",
+      "bytes": 8091404
+    },
+    {
+      "path": "Assets/Humans/BeachCharacter.fbx",
+      "bytes": 8114300
+    },
+    {
+      "path": "Assets/Humans/Farmer.fbx",
+      "bytes": 8096108
+    }
+  ],
+  "after_bytes": 130543199,
+  "roots": [
+    "/Game/HumanFishing/Core/BP_HumanFishingGameInstance",
+    "/Game/HumanFishing/Core/BP_HumanFishingGameMode",
+    "/Game/HumanFishing/Equipment/Icons/T_BraidedLine",
+    "/Game/HumanFishing/Equipment/Icons/T_Mudskipper",
+    "/Game/HumanFishing/Maps/L_DeepOcean",
+    "/Game/HumanFishing/Maps/L_SaveMenu",
+    "/Game/HumanFishing/Maps/L_ScenicCove",
+    "/Game/HumanFishing/Maps/L_ShorePrototype",
+    "/Game/HumanFishing/Ocean/Fauna/A_Shark_Swim",
+    "/Game/HumanFishing/Ocean/Fauna/SK_Shark",
+    "/Game/HumanFishing/UI/Backpack/DA_HumanFishingCatalog"
+  ]
+}
