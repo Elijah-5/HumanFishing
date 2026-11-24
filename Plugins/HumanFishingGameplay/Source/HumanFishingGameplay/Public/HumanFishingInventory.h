@@ -309,8 +309,8 @@ public:
     static constexpr int32 UpgradedColumns = 5;
     static constexpr int32 Rows = 4;
     static constexpr float MaxHealth = 100.f;
-    static constexpr int32 MudskipperCost = 25;
-    static constexpr int32 BraidedLineCost = 40;
+    static constexpr int32 MudskipperCost = 12;
+    static constexpr int32 BraidedLineCost = 12;
     static constexpr int32 HundredDollarBillCost = 5;
     static constexpr int32 FlashBaitCost = 10;
     static constexpr int32 CoveKeyCost = 60;

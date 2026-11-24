@@ -94,8 +94,8 @@ after you discard the catch.
 ## Ocean shop
 
 Swim up to the wooden Seaweed Exchange stall in the deep ocean and press **E** to trade.
-Redeem the catches in your backpack for seaweed. Then, use the seaweed to
-purchase upgrades. Press E, Esc, Tab, or Close to return to swimming.
+Sell three common catches for 12 seaweed to buy either Mudskipper or Braided Line.
+Press E, Esc, Tab, or Close to return to swimming.
 
 The shop puts the live backpack on the left, including its extra column after expansion. Select a catch and choose
 **Sell selected**, or use the prominent **Sell all** button to redeem the whole
@@ -112,8 +112,8 @@ The HUD uses `Flash Bait (3) | Switch(B)` for compact stock feedback.
 | --- | ---: | --- |
 | $100 Bill | 5 each | Attracts all visitors, including the Businessman |
 | Flash Bait | 10 each | All visitors; rarity priority, ×2 interest, +4 seconds to hook |
-| Mudskipper | 25 | Permanently halves damage on land |
-| Braided Line | 40 | Permanently adds 25% line durability |
+| Mudskipper | 12 | Permanently halves damage on land |
+| Braided Line | 12 | Permanently adds 25% line durability |
 | Backpack Expansion | 50 | Permanently expands the backpack from 4×4 to 5×4 |
 | Jellyshock Capsule | 12 each | Press F underwater; the first shark hit is stunned for 30 seconds |
 | Violet Jellyshock | 35 each | Press G underwater; defeats the first shark hit in a violet nova |
@@ -238,22 +238,22 @@ inventory and travel clips were recorded in Unreal Editor and may show older UI.
 ## Visitor roster
 
 Rarity affects spawn odds, how long a visitor stays, and seaweed value per
-occupied cell. Footprints are width by height. Interest drain and line wear
-are measured per second.
+occupied cell. Each catch also earns a base payout of 2 seaweed. Footprints
+are width by height. Interest drain and line wear are measured per second.
 
 | Visitor | Rarity | Footprint | Seaweed value | Bait interest | Interest drain | Line wear |
 | --- | --- | --- | --- | --- | --- | --- |
-| Beach tourist | White | 1×2 | 2 | 1.25× | 8 | 8 |
-| Casual woman | White | 2×1 | 2 | 1.05× | 11 | 6 |
-| Farmer | Green | 2×2 | 8 | 0.85× | 6 | 10 |
-| Lifeguard | Green | 1×3 | 6 | 1.15× | 10 | 7 |
-| Worker | Blue | 2×3 | 18 | 0.90× | 9 | 15 |
-| Delivery rider | Blue | 2×2 | 12 | 1.45× | 18 | 11 |
-| Businessman | Purple | 1×3 | 15 | 1.70× | 20 | 17 |
-| Surf instructor | Purple | 3×1 | 15 | 0.85× | 18 | 18 |
-| Photographer | Gold | 3×2 | 48 | 0.72× | 22 | 20 |
-| Diver | Gold | 2×3 | 48 | 0.65× | 25 | 22 on shore, 30 while swimming |
-| Elijah | Red | 3×3 | 117 | 0.53× | 19 | 9 |
+| Beach tourist | White | 1×2 | 4 | 1.25× | 8 | 8 |
+| Casual woman | White | 2×1 | 4 | 1.05× | 11 | 6 |
+| Farmer | Green | 2×2 | 10 | 0.85× | 6 | 10 |
+| Lifeguard | Green | 1×3 | 8 | 1.15× | 10 | 7 |
+| Worker | Blue | 2×3 | 20 | 0.90× | 9 | 15 |
+| Delivery rider | Blue | 2×2 | 14 | 1.45× | 18 | 11 |
+| Businessman | Purple | 1×3 | 17 | 1.70× | 20 | 17 |
+| Surf instructor | Purple | 3×1 | 17 | 0.85× | 18 | 18 |
+| Photographer | Gold | 3×2 | 50 | 0.72× | 22 | 20 |
+| Diver | Gold | 2×3 | 50 | 0.65× | 25 | 22 on shore, 30 while swimming |
+| Elijah | Red | 3×3 | 119 | 0.53× | 19 | 9 |
 
 ## Run the project
 

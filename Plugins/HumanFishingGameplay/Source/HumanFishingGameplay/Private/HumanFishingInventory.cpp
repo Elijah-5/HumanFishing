@@ -92,7 +92,8 @@ int32 UHumanFishingCatalog::GetCatchSeaweedValue(const FHumanFishingCatch& Item)
     {
         return 0;
     }
-    return Item.Size.X * Item.Size.Y * GetRarityRules(Profile->Rarity).SeaweedPerCell;
+    constexpr int32 BaseCatchValue = 2;
+    return BaseCatchValue + Item.Size.X * Item.Size.Y * GetRarityRules(Profile->Rarity).SeaweedPerCell;
 }
 
 const FHumanFishingCatch* UHumanFishingInventory::FindCatch(int32 Id) const

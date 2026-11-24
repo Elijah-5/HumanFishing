@@ -20,15 +20,15 @@ bool FHumanFishingShopRedemption::RunTest(const FString& Parameters)
     TestEqual(TEXT("Empty redemption"), Inventory->RedeemCatches(Catalog), 0);
     TestTrue(TEXT("Store first catch"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
     TestTrue(TEXT("Store rare catch"), Inventory->TryAddCatch(TEXT("Photographer"), FIntPoint(3, 2)));
-    TestEqual(TEXT("Quote uses catch sizes and rarities"), Inventory->GetRedemptionValue(Catalog), 50);
+    TestEqual(TEXT("Quote includes the base payout for each catch"), Inventory->GetRedemptionValue(Catalog), 54);
     TestEqual(TEXT("Quote does not change backpack"), Inventory->GetCatches().Num(), 2);
-    TestEqual(TEXT("Sell all catches"), Inventory->RedeemCatches(Catalog), 50);
-    TestEqual(TEXT("Balance"), Inventory->GetSeaweed(), 50);
+    TestEqual(TEXT("Sell all catches"), Inventory->RedeemCatches(Catalog), 54);
+    TestEqual(TEXT("Balance"), Inventory->GetSeaweed(), 54);
     TestEqual(TEXT("Backpack emptied"), Inventory->GetCatches().Num(), 0);
     TestEqual(TEXT("Lifetime captures preserved"), Inventory->GetLifetimeCatchCount(), 2);
     TestTrue(TEXT("Field Guide preserved"), Inventory->HasCaughtType(TEXT("Photographer")));
     TestEqual(TEXT("Repeated redemption pays nothing"), Inventory->RedeemCatches(Catalog), 0);
-    TestEqual(TEXT("Balance unchanged"), Inventory->GetSeaweed(), 50);
+    TestEqual(TEXT("Balance unchanged"), Inventory->GetSeaweed(), 54);
 
     Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2));
     Inventory->TryAddCatch(TEXT("Unknown"), FIntPoint(1, 1));
@@ -38,6 +38,29 @@ bool FHumanFishingShopRedemption::RunTest(const FString& Parameters)
     TestTrue(TEXT("Progress remains valid"), Inventory->GetProgress().IsValid());
     return true;
 }
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingFirstShopTrip,
+    "HumanFishing.Shop.FirstTrip", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FHumanFishingFirstShopTrip::RunTest(const FString& Parameters)
+{
+    auto* Game = NewObject<UGameInstance>();
+    auto* Catalog = NewObject<UHumanFishingCatalog>();
+    Catalog->Types.Add(TEXT("Tourist")).Rarity = EHumanFishingRarity::White;
+    for (auto BuyUpgrade : {&UHumanFishingInventory::BuyMudskipper, &UHumanFishingInventory::BuyBraidedLine})
+    {
+        auto* Inventory = NewObject<UHumanFishingInventory>(Game);
+        for (int32 Catch = 0; Catch < 3; ++Catch)
+        {
+            TestTrue(TEXT("Store a common catch"), Inventory->TryAddCatch(TEXT("Tourist"), FIntPoint(1, 2)));
+        }
+        TestEqual(TEXT("Three common catches redeem for 12 seaweed"), Inventory->RedeemCatches(Catalog), 12);
+        TestTrue(TEXT("First sale funds the chosen upgrade"), (Inventory->*BuyUpgrade)());
+        TestEqual(TEXT("First upgrade costs the full sale"), Inventory->GetSeaweed(), 0);
+    }
+    return true;
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHumanFishingMudskipperPurchase,
     "HumanFishing.Shop.Mudskipper", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 
@@ -48,7 +71,7 @@ bool FHumanFishingMudskipperPurchase::RunTest(const FString& Parameters)
     TestFalse(TEXT("New progress has no Mudskipper"), Inventory->HasMudskipper());
     Inventory->SetSeaweed(UHumanFishingInventory::MudskipperCost - 1);
     TestFalse(TEXT("Insufficient funds cannot buy upgrade"), Inventory->BuyMudskipper());
-    TestEqual(TEXT("Failed purchase keeps balance"), Inventory->GetSeaweed(), 24);
+    TestEqual(TEXT("Failed purchase keeps balance"), Inventory->GetSeaweed(), 11);
     TestFalse(TEXT("Failed purchase keeps upgrade locked"), Inventory->HasMudskipper());
     Inventory->SetSeaweed(UHumanFishingInventory::MudskipperCost);
     TestTrue(TEXT("Exact funds buy upgrade"), Inventory->BuyMudskipper());
@@ -69,7 +92,7 @@ bool FHumanFishingSingleSale::RunTest(const FString& Parameters)
     auto* Catalog=NewObject<UHumanFishingCatalog>();Catalog->Types.Add(TEXT("Tourist")).Rarity=EHumanFishingRarity::White;
     I->TryAddCatch(TEXT("Tourist"),FIntPoint(1,2));I->TryAddCatch(TEXT("Tourist"),FIntPoint(1,2));
     const int32 Id=I->GetCatches()[0].Id;
-    TestEqual(TEXT("One selected catch pays its exact value"),I->RedeemCatch(Catalog,Id),2);
+    TestEqual(TEXT("One selected catch pays its exact value"),I->RedeemCatch(Catalog,Id),4);
     TestEqual(TEXT("Other catch remains"),I->GetCatches().Num(),1);
     TestEqual(TEXT("No duplicate payout"),I->RedeemCatch(Catalog,Id),0);
     TestEqual(TEXT("No unknown catch payout"),I->RedeemCatch(Catalog,MAX_int32),0);
